@@ -527,23 +527,21 @@ public class OreSim extends GameGrid implements GGKeyListener
    */
   private void updateLogResult() {
     movementIndex++;
-    List<Actor> pushers = getActors(Pusher.class);
-    List<Actor> ores = getActors(Ore.class);
-    List<Actor> targets = getActors(Target.class);
-    List<Actor> rocks = getActors(Clay.class);
-    List<Actor> clays = getActors(Clay.class);
-    List<Actor> bulldozers = getActors(Bulldozer.class);
-    List<Actor> excavators = getActors(Excavator.class);
+    Map<ElementType, List<Actor>> actorMap = new HashMap<>();
+    actorMap.put(ElementType.PUSHER, getActors(Pusher.class));
+    actorMap.put(ElementType.ORE, getActors(Ore.class));
+    actorMap.put(ElementType.TARGET, getActors(Target.class));
+    actorMap.put(ElementType.ROCK, getActors(Rock.class));
+    actorMap.put(ElementType.CLAY, getActors(Clay.class));
+    actorMap.put(ElementType.BULLDOZER, getActors(Bulldozer.class));
+    actorMap.put(ElementType.EXCAVATOR, getActors(Excavator.class));
 
-    logResult.append(movementIndex + "#");
-    logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("#");
-    logResult.append(ElementType.ORE.getShortType()).append(actorLocations(ores)).append("#");
-    logResult.append(ElementType.TARGET.getShortType()).append(actorLocations(targets)).append("#");
-    logResult.append(ElementType.ROCK.getShortType()).append(actorLocations(rocks)).append("#");
-    logResult.append(ElementType.CLAY.getShortType()).append(actorLocations(clays)).append("#");
-    logResult.append(ElementType.BULLDOZER.getShortType()).append(actorLocations(bulldozers)).append("#");
-    logResult.append(ElementType.EXCAVATOR.getShortType()).append(actorLocations(excavators));
-
+    logResult.append(movementIndex).append("#");
+    for (Map.Entry<ElementType, List<Actor>> entry : actorMap.entrySet()) {
+      ElementType type = entry.getKey();
+      List<Actor> actors = entry.getValue();
+      logResult.append(type.getShortType()).append(actorLocations(actors)).append("#");
+    }
     logResult.append("\n");
   }
 
