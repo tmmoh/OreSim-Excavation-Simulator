@@ -384,20 +384,35 @@ public class OreSim extends GameGrid implements GGKeyListener
     }
   }
 
+  // Refactored method to handle movement
+  private void handleMovement(Location next) {
+    if (isFinished)
+      return;
+
+    Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
+    if (curTarget != null) {
+      curTarget.show();
+    }
+
+    if (next != null && canMove(next)) {
+      pusher.setLocation(next);
+      updateLogResult();
+    }
+    refresh();
+  }
+
   /**
    * The method is automatically called by the framework when a key is pressed. Based on the pressed key, the pusher
    *  will change the direction and move
    * @param evt
    * @return
    */
-  public boolean keyPressed(KeyEvent evt)
-  {
+  public boolean keyPressed(KeyEvent evt) {
     if (isFinished)
       return true;
 
     Location next = null;
-    switch (evt.getKeyCode())
-    {
+    switch (evt.getKeyCode()) {
       case KeyEvent.VK_LEFT:
         next = pusher.getLocation().getNeighbourLocation(Location.WEST);
         pusher.setDirection(Location.WEST);
@@ -415,19 +430,7 @@ public class OreSim extends GameGrid implements GGKeyListener
         pusher.setDirection(Location.SOUTH);
         break;
     }
-
-    Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
-    if (curTarget != null){
-      curTarget.show();
-    }
-
-
-    if (next != null && canMove(next))
-    {
-      pusher.setLocation(next);
-      updateLogResult();
-    }
-    refresh();
+    handleMovement(next);
     return true;
   }
 
