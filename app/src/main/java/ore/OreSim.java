@@ -282,11 +282,23 @@ public class OreSim extends GameGrid implements GGKeyListener
     FileWriter fileWriter = null;
     try {
       fileWriter = new FileWriter(statisticsFile);
-      fileWriter.write("Pusher-1 Moves: 10\n");
-      fileWriter.write("Excavator-1 Moves: 5\n");
-      fileWriter.write("Excavator-1 Rock removed: 3\n");
-      fileWriter.write("Bulldozer-1 Moves: 2\n");
-      fileWriter.write("Bulldozer-1 Clay removed: 1\n");
+
+      // Calculate and write statistics for pusher
+      int pusherMoves = movementIndex;
+      fileWriter.write("Pusher-1 Moves: " + pusherMoves + "\n");
+
+      // Calculate and write statistics for excavator
+      int excavatorMoves = movementIndex - 1; // Pusher moves 1 step first
+      int rocksRemoved = getNumberOfRocksRemoved();
+      fileWriter.write("Excavator-1 Moves: " + excavatorMoves + "\n");
+      fileWriter.write("Excavator-1 Rock removed: " + rocksRemoved + "\n");
+
+      // Calculate and write statistics for bulldozer
+      int bulldozerMoves = movementIndex - 1; // Pusher moves 1 step first
+      int clayRemoved = getNumberOfClayRemoved();
+      fileWriter.write("Bulldozer-1 Moves: " + bulldozerMoves + "\n");
+      fileWriter.write("Bulldozer-1 Clay removed: " + clayRemoved + "\n");
+
     } catch (IOException e) {
       System.out.println("Cannot write to file - e: " + e.getLocalizedMessage());
     } finally {
@@ -296,6 +308,32 @@ public class OreSim extends GameGrid implements GGKeyListener
         System.out.println("Cannot close file - e: " + e.getLocalizedMessage());
       }
     }
+  }
+
+  // Helper method to calculate the total number of rocks removed by excavator
+  private int getNumberOfRocksRemoved() {
+    int rocksRemoved = 0;
+    List<Actor> rocks = getActors(Rock.class);
+    for (int i = 0; i < rocks.size(); i++) {
+      Actor rock = rocks.get(i);
+      if (!rock.isVisible()) {
+        rocksRemoved++;
+      }
+    }
+    return rocksRemoved;
+  }
+
+  // Helper method to calculate the total number of clay removed by bulldozer
+  private int getNumberOfClayRemoved() {
+    int clayRemoved = 0;
+    List<Actor> clays = getActors(Clay.class);
+    for (int i = 0; i < clays.size(); i++) {
+      Actor clay = clays.get(i);
+      if (!clay.isVisible()) {
+        clayRemoved++;
+      }
+    }
+    return clayRemoved;
   }
 
   /**
