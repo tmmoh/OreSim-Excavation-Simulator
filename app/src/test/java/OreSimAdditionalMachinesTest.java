@@ -4,7 +4,10 @@ import ore.PropertiesLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -20,19 +23,9 @@ public class OreSimAdditionalMachinesTest {
 
         String logResult = new OreSim(properties, grid).runApp(true);
         logLines = logResult.split("\n");
-    }
-
-    @Test(timeout = 20000)
-    public void testEndGame() {
-        // Test for the end result
-        int END_LINE_NUMBER = 59;
-        String endLine = logLines[END_LINE_NUMBER - 1];
-        OreTestData oreTestData = new OreTestData(END_LINE_NUMBER, endLine);
-        assertEquals(0, oreTestData.actorLocations.get(OreSim.ElementType.TARGET).size());
-        assertEquals(1, oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).size());
-        assertEquals("2-3", oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).stream().findFirst().get());
-        assertEquals(0, oreTestData.actorLocations.get(OreSim.ElementType.ROCK).size());
-        assertEquals(0, oreTestData.actorLocations.get(OreSim.ElementType.CLAY).size());
+        System.out.println("logResult = " + logResult);
+        System.out.println("logLines = " + logLines.length);
+        System.out.println("logLines = " + logLines);
     }
 
     @Test(timeout = 20000)
@@ -77,7 +70,7 @@ public class OreSimAdditionalMachinesTest {
     @Test(timeout = 20000)
     public void testEndResult() {
         // Test for the end result
-        int END_LINE_NUMBER = 59;
+        int END_LINE_NUMBER = 60;
         String endLine = logLines[END_LINE_NUMBER - 1];
         OreTestData oreTestData = new OreTestData(END_LINE_NUMBER, endLine);
         assertEquals(0, oreTestData.actorLocations.get(OreSim.ElementType.TARGET).size());

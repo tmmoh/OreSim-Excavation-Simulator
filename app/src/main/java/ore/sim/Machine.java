@@ -3,24 +3,21 @@ package ore.sim;
 import ch.aplu.jgamegrid.*;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-abstract class Machine extends MovableActor {
-    private List<String> controls = null;
-    private int autoMovementIndex = 0;
+public abstract class Machine extends MovableActor {
+    private final int id;
     private final List<Class<? extends MovableActor>> pushable;
     private final List<Class<? extends Actor>> destroyable;
 
-    public Machine(boolean isRotatable, String fileName, List<Class<? extends MovableActor>> pushable, List<Class<? extends Actor>> destroyable) {
+    public Machine(int id, boolean isRotatable, String fileName, List<Class<? extends MovableActor>> pushable, List<Class<? extends Actor>> destroyable) {
         super(isRotatable, fileName);
         this.pushable = pushable;
         this.destroyable = destroyable;
-    }
-
-    public void setupMachine(boolean isAutoMode, List<String> controls) {
-        this.controls = controls;
+        this.id = id;
     }
 
     private boolean canPush(Actor actor) {
@@ -95,23 +92,51 @@ abstract class Machine extends MovableActor {
         return false;
     }
 
+    public boolean tryMove(KeyEvent evt) {
+        Location.CompassDirection direction = switch (evt.getKeyCode()) {
+            case KeyEvent.VK_LEFT -> Location.CompassDirection.WEST;
+            case KeyEvent.VK_UP -> Location.CompassDirection.NORTH;
+            case KeyEvent.VK_RIGHT -> Location.CompassDirection.EAST;
+            case KeyEvent.VK_DOWN -> Location.CompassDirection.SOUTH;
+            default -> null;
+        };
+
+        return (direction != null && tryMove(direction));
+    }
+
+    public boolean tryMove(String move) {
+        Location.CompassDirection direction = switch (move) {
+            case "L" -> Location.CompassDirection.WEST;
+            case "U" -> Location.CompassDirection.NORTH;
+            case "R" -> Location.CompassDirection.EAST;
+            case "D" -> Location.CompassDirection.SOUTH;
+            default -> null;
+        };
+
+        return (direction != null && tryMove(direction));
+    }
+
+    public int getId() {
+        return id;
+    }
+
 }
 
 class OrePusher extends Machine {
-    public OrePusher() {
-        super(true, "sprites/pusher.png", List.of(Ore.class), Collections.emptyList());  // Rotatable
+    public OrePusher(int id) {
+        super(id, true, "sprites/pusher.png", List.of(Ore.class), Collections.emptyList());  // Rotatable
     }
 }
 
 class Bulldozer extends Machine {
-    public Bulldozer() {
-        super(true, "sprites/bulldozer.png", Collections.emptyList(), List.of(Rock.class));  // Rotatable
+    public Bulldozer(int id) {
+        super(id, true, "sprites/bulldozer.png", Collections.emptyList(), List.of(Rock.class));  // Rotatable
     }
 }
 
 class Excavator extends Machine {
-    public Excavator() {
-        super(true, "sprites/excavator.png", Collections.emptyList(), List.of(Clay.class));  // Rotatable
+    public Excavator(int id) {
+        super(id, true, "sprites/excavator.png", Collections.emptyList(), List.of(Clay.class));  // Rotatable
     }
 }
 

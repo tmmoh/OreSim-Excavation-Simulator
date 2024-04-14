@@ -33,9 +33,9 @@ public class OreSimOriginalTest {
         assertEquals(0, oreTestData.actorLocations.get(OreSim.ElementType.TARGET).size());
         assertEquals(1, oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).size());
         assertEquals("16-7", oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).stream().findFirst().get());
-        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.ROCK).size());
-        Set<String> rockLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
-        assertEquals(rockLocations, oreTestData.actorLocations.get(OreSim.ElementType.ROCK));
+        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.CLAY).size());
+        Set<String> clayLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
+        assertEquals(clayLocations, oreTestData.actorLocations.get(OreSim.ElementType.CLAY));
     }
 
     @Test(timeout = 20000)
@@ -49,9 +49,9 @@ public class OreSimOriginalTest {
         assertEquals(1, oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).size());
         assertEquals("17-6", oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).stream().findFirst().get());
         assertEquals("17-8", oreTestData.actorLocations.get(OreSim.ElementType.TARGET).stream().findFirst().get());
-        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.ROCK).size());
-        Set<String> rockLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
-        assertEquals(rockLocations, oreTestData.actorLocations.get(OreSim.ElementType.ROCK));
+        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.CLAY).size());
+        Set<String> clayLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
+        assertEquals(clayLocations, oreTestData.actorLocations.get(OreSim.ElementType.CLAY));
     }
 
     @Test
@@ -65,8 +65,8 @@ public class OreSimOriginalTest {
         assertEquals(1, oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).size());
         assertEquals("17-7", oreTestData.actorLocations.get(OreSim.ElementType.PUSHER).stream().findFirst().get());
         assertEquals("17-7", oreTestData.actorLocations.get(OreSim.ElementType.TARGET).stream().findFirst().get());
-        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.ROCK).size());
-        Set<String> rockLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
-        assertEquals(rockLocations, oreTestData.actorLocations.get(OreSim.ElementType.ROCK));
+        assertEquals(5, oreTestData.actorLocations.get(OreSim.ElementType.CLAY).size());
+        Set<String> clayLocations = new HashSet<>(Arrays.asList("7-5", "7-6", "6-8", "7-8", "8-8"));
+        assertEquals(clayLocations, oreTestData.actorLocations.get(OreSim.ElementType.CLAY));
     }
 }

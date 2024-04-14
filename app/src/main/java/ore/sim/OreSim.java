@@ -2,6 +2,8 @@ package ore.sim;
 
 import ch.aplu.jgamegrid.*;
 import ore.MapGrid;
+import ore.auto.AutoController;
+import ore.manual.ManualController;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -12,8 +14,7 @@ import java.util.*;
 import java.util.List;
 import java.util.Properties;
 
-public class OreSim extends GameGrid implements GGKeyListener
-{
+public class OreSim extends GameGrid {
   // ------------- Inner classes -------------
   public enum ElementType{
     OUTSIDE("OS"), EMPTY("ET"), BORDER("BD"),
@@ -43,6 +44,12 @@ public class OreSim extends GameGrid implements GGKeyListener
 
   // ------------- End of inner classes ------
   //
+
+  private Map<String, Map<Integer, Machine>> machines;
+
+  private ManualController manualController;
+  private AutoController autoController;
+
   private MapGrid grid;
   private int nbHorzCells;
   private int nbVertCells;
@@ -59,8 +66,9 @@ public class OreSim extends GameGrid implements GGKeyListener
   private List<String> controls;
   private int movementIndex;
   private StringBuilder logResult = new StringBuilder();
-  public OreSim(Properties properties, MapGrid grid)
-  {
+
+
+  public OreSim(Properties properties, MapGrid grid) {
     super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
     this.grid = grid;
     nbHorzCells = grid.getNbHorzCells();
@@ -74,6 +82,14 @@ public class OreSim extends GameGrid implements GGKeyListener
     gameDuration = Integer.parseInt(properties.getProperty("duration"));
     setSimulationPeriod(Integer.parseInt(properties.getProperty("simulationPeriod")));
     controls = Arrays.asList(properties.getProperty("machines.movements").split(","));
+
+    machines = new HashMap<>();
+    for (String type : List.of("P", "B", "E")) {
+      machines.put(type, new HashMap<>());
+    }
+
+    autoController = new AutoController(this, properties, machines);
+    manualController = new ManualController(this, machines);
   }
 
   /**
@@ -92,35 +108,6 @@ public class OreSim extends GameGrid implements GGKeyListener
     return nbTarget;
   }
 
-  private int autoMovementIndex = 0;
-  /**
-   * Method to move pusher automatically based on the instructions input from properties file
-   */
-  public void autoMoveNext() {
-    if (controls != null && autoMovementIndex < controls.size()) {
-      String[] currentMove = controls.get(autoMovementIndex).split("-");
-      String machine = currentMove[0];
-      String move = currentMove[1];
-      autoMovementIndex++;
-      if (machine.equals("P")) {
-        if (isFinished)
-          return;
-
-        Location.CompassDirection direction = switch (move) {
-            case "L" -> Location.CompassDirection.WEST;
-            case "U" -> Location.CompassDirection.NORTH;
-            case "R" -> Location.CompassDirection.EAST;
-            case "D" -> Location.CompassDirection.SOUTH;
-            default -> null;
-        };
-        if (direction == null) {
-          return;
-        }
-        pusher.tryMove(direction);
-        refresh();
-      }
-    }
-  }
 
   /**
    * The main method to run the game
@@ -131,14 +118,16 @@ public class OreSim extends GameGrid implements GGKeyListener
     GGBackground bg = getBg();
     drawBoard(bg);
     drawActors();
-    addKeyListener(this);
+    addKeyListener(manualController);
     if (isDisplayingUI) {
       show();
     }
 
     if (isAutoMode) {
         doRun();
+        autoController.runControls();
     }
+
 
     int oresDone = checkOresDone();
     double ONE_SECOND = 1000.0;
@@ -149,10 +138,7 @@ public class OreSim extends GameGrid implements GGKeyListener
         gameDuration -= minusDuration;
         String title = String.format("# Ores at Target: %d. Time left: %.2f seconds", oresDone, gameDuration);
         setTitle(title);
-        if (isAutoMode) {
-          autoMoveNext();
-          updateLogResult();
-        }
+
 
         oresDone = checkOresDone();
       } catch (InterruptedException e) {
@@ -244,9 +230,10 @@ public class OreSim extends GameGrid implements GGKeyListener
         ElementType a = grid.getCell(location);
         if (a == ElementType.PUSHER)
         {
-          pusher = new OrePusher();
+          pusher = new OrePusher(machines.get("P").size() + 1);
           addActor(pusher, location);
-          pusher.setupMachine(isAutoMode, controls);
+          machines.get("P").put(pusher.getId(), pusher);
+          manualController.setMachine("P", pusher.getId());
         }
         if (a == ElementType.ORE)
         {
@@ -273,14 +260,16 @@ public class OreSim extends GameGrid implements GGKeyListener
 
         if (a == ElementType.BULLDOZER)
         {
-          bulldozer = new Bulldozer();
+          bulldozer = new Bulldozer(machines.get("B").size() + 1);
           addActor(bulldozer, location);
+          machines.get("B").put(bulldozer.getId(), bulldozer);
 
         }
         if (a == ElementType.EXCAVATOR)
         {
-          excavator = new Excavator();
+          excavator = new Excavator(machines.get("E").size() + 1);
           addActor(excavator, location);
+          machines.get("E").put(excavator.getId(), excavator);
 
         }
       }
@@ -314,40 +303,6 @@ public class OreSim extends GameGrid implements GGKeyListener
     }
   }
 
-  /**
-   * The method is automatically called by the framework when a key is pressed. Based on the pressed key, the pusher
-   *  will change the direction and move
-   * @param evt
-   * @return
-   */
-  public boolean keyPressed(KeyEvent evt)
-  {
-    if (isFinished)
-      return true;
-
-    Location.CompassDirection direction = switch (evt.getKeyCode()) {
-        case KeyEvent.VK_LEFT -> Location.CompassDirection.WEST;
-        case KeyEvent.VK_UP -> Location.CompassDirection.NORTH;
-        case KeyEvent.VK_RIGHT -> Location.CompassDirection.EAST;
-        case KeyEvent.VK_DOWN -> Location.CompassDirection.SOUTH;
-        default -> null;
-    };
-
-    if (direction == null) {
-      return false;
-    }
-
-    pusher.tryMove(direction);
-    updateLogResult();
-    refresh();
-    return true;
-  }
-
-  public boolean keyReleased(KeyEvent evt)
-  {
-    return true;
-  }
-
 
 
   /**
@@ -355,12 +310,12 @@ public class OreSim extends GameGrid implements GGKeyListener
    * The log result will be tested against our expected output.
    * Your code will need to pass all the 3 test suites with 9 test cases.
    */
-  private void updateLogResult() {
+  public void updateLogResult() {
     movementIndex++;
     List<Actor> pushers = getActors(OrePusher.class);
     List<Actor> ores = getActors(Ore.class);
     List<Actor> targets = getActors(Target.class);
-    List<Actor> rocks = getActors(Clay.class);
+    List<Actor> rocks = getActors(Rock.class);
     List<Actor> clays = getActors(Clay.class);
     List<Actor> bulldozers = getActors(Bulldozer.class);
     List<Actor> excavators = getActors(Excavator.class);

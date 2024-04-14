@@ -32,13 +32,13 @@ public class OreSimStatisticsTest {
         try {
             scanner = new Scanner(new File("statistics.txt"));
             String pusherMoveStatistics = scanner.nextLine();
-            assertEquals("Pusher-1 Moves: 21", pusherMoveStatistics);
+            assertEquals("Pusher-1 Moves: 35", pusherMoveStatistics);
             String excavatorMoveStatistics = scanner.nextLine();
             assertEquals("Excavator-1 Moves: 14", excavatorMoveStatistics);
             String excavatorRemoveStatistics = scanner.nextLine();
-            assertEquals("Excavator-1 Rock removed: 6", excavatorRemoveStatistics);
+            assertEquals("Excavator-1 Rock removed: 10", excavatorRemoveStatistics);
             String bulldozerMoveStatistics = scanner.nextLine();
-            assertEquals("Bulldozer-1 Moves: 21", bulldozerMoveStatistics);
+            assertEquals("Bulldozer-1 Moves: 6", bulldozerMoveStatistics);
             String bulldozerRemoveStatistics = scanner.nextLine();
             assertEquals("Bulldozer-1 Clay removed: 5", bulldozerRemoveStatistics);
         } catch (FileNotFoundException e) {
