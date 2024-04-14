@@ -4,18 +4,36 @@ import ch.aplu.jgamegrid.*;
 import ore.MovableActor;
 
 import java.awt.event.KeyEvent;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class Machine extends MovableActor {
     private final int id;
     private final List<Class<? extends MovableActor>> pushable;
     private final List<Class<? extends Actor>> destroyable;
+    private int moves;
+
+    private final Map<Class<? extends MovableActor>, Integer> pushed;
+    private final Map<Class<? extends Actor>, Integer> destroyed;
 
     public Machine(int id, boolean isRotatable, String fileName, List<Class<? extends MovableActor>> pushable, List<Class<? extends Actor>> destroyable) {
         super(isRotatable, fileName);
         this.pushable = pushable;
         this.destroyable = destroyable;
         this.id = id;
+        this.moves = 0;
+
+        this.pushed = new HashMap<>();
+        this.destroyed = new HashMap<>();
+
+        for (Class<? extends MovableActor> clazz : pushable) {
+            pushed.put(clazz, 0);
+        }
+
+        for (Class<? extends Actor> clazz : destroyable) {
+            destroyed.put(clazz, 0);
+        }
     }
 
     private boolean canPush(Actor actor) {
@@ -75,20 +93,24 @@ public abstract class Machine extends MovableActor {
                 if (!a.tryMove(dir)) {
                     return false;
                 }
+                pushed.computeIfPresent(a.getClass(), (k, v) -> v + 1);
             }
 
             // Destroy any destroyable objects
             if (canDestroy(actor)) {
                 actor.removeSelf();
+                destroyed.computeIfPresent(actor.getClass(), (k, v) -> v + 1);
             }
 
-            move(1);
+            move();
+            moves++;
 
             return true;
         }
 
         return false;
     }
+
 
     public boolean tryMove(KeyEvent evt) {
         Location.CompassDirection direction = switch (evt.getKeyCode()) {
@@ -114,9 +136,16 @@ public abstract class Machine extends MovableActor {
         return (direction != null && tryMove(direction));
     }
 
+    public int getMoves() {
+        return moves;
+    }
+
     public int getId() {
         return id;
     }
 
+    public Map<Class<? extends Actor>, Integer> getDestroyed() {
+        return destroyed;
+    }
 }
 

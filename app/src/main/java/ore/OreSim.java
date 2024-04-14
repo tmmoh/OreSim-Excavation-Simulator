@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.Properties;
+import org.apache.commons.text.WordUtils;
 
 public class OreSim extends GameGrid {
   // ------------- Inner classes -------------
@@ -83,9 +84,9 @@ public class OreSim extends GameGrid {
     gameDuration = Integer.parseInt(properties.getProperty("duration"));
     setSimulationPeriod(Integer.parseInt(properties.getProperty("simulationPeriod")));
 
-    machines = new HashMap<>();
-    for (String type : List.of(ElementType.PUSHER.getShortType(), ElementType.BULLDOZER.getShortType(), ElementType.EXCAVATOR.getShortType())) {
-      machines.put(type, new HashMap<>());
+    machines = new LinkedHashMap<>();
+    for (String type : List.of(ElementType.PUSHER.getShortType(), ElementType.EXCAVATOR.getShortType(), ElementType.BULLDOZER.getShortType())) {
+      machines.put(type, new TreeMap<>());
     }
 
     autoController = new AutoController(this, properties, machines);
@@ -200,24 +201,26 @@ public class OreSim extends GameGrid {
     try {
       fileWriter = new FileWriter(statisticsFile);
 
-      // Calculate and write statistics for pusher
-      int pusherMoves = movementIndex;
-      fileWriter.write("Pusher-1 Moves: " + pusherMoves + "\n");
+      FileWriter finalFileWriter = fileWriter;
+      machines.forEach((type, machines) -> {
+        machines.forEach((id, m) -> {
+          try {
+            ElementType t = ElementType.getElementByShortType(type);
+            finalFileWriter.write( WordUtils.capitalize(t.name().toLowerCase()) + "-" + m.getId() + " Moves: " + m.getMoves() + "\n");
+            m.getDestroyed().forEach((k, v) -> {
+                try {
+                    finalFileWriter.write( WordUtils.capitalize(t.name().toLowerCase()) + "-" + m.getId() + " " + k.getSimpleName() + " removed: " + v + "\n");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+          } catch (IOException e) {
+            System.out.println("Cannot write to file - e: " + e.getLocalizedMessage());
+          }
+        });
+      });
 
-      // Calculate and write statistics for excavator
-      int excavatorMoves = movementIndex - 1; // Pusher moves 1 step first
-      int rocksRemoved = getNumberOfRocksRemoved();
-      fileWriter.write("Excavator-1 Moves: " + excavatorMoves + "\n");
-      fileWriter.write("Excavator-1 Rock removed: " + rocksRemoved + "\n");
-
-      // Calculate and write statistics for bulldozer
-      int bulldozerMoves = movementIndex - 1; // Pusher moves 1 step first
-      int clayRemoved = getNumberOfClayRemoved();
-      fileWriter.write("Bulldozer-1 Moves: " + bulldozerMoves + "\n");
-      fileWriter.write("Bulldozer-1 Clay removed: " + clayRemoved + "\n");
-
-    } catch (IOException e) {
-      System.out.println("Cannot write to file - e: " + e.getLocalizedMessage());
+      } catch (IOException e) {
     } finally {
       try {
         fileWriter.close();
