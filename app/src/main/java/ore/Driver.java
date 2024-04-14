@@ -1,4 +1,6 @@
 package ore;
+import ore.sim.OreSim;
+
 import java.util.Properties;
 
 public class Driver {

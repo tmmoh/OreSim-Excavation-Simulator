@@ -1,4 +1,4 @@
-import ore.OreSim;
+import ore.sim.OreSim;
 
 import java.util.*;
 

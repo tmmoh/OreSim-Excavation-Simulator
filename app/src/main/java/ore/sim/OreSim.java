@@ -1,6 +1,7 @@
-package ore;
+package ore.sim;
 
 import ch.aplu.jgamegrid.*;
+import ore.MapGrid;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -40,116 +41,15 @@ public class OreSim extends GameGrid implements GGKeyListener
     }
   }
 
-  private class Target extends Actor
-  {
-    public Target()
-    {
-      super("sprites/target.gif");
-    }
-  }
-
-  private class Ore extends Actor
-  {
-    public Ore()
-    {
-      super("sprites/ore.png",2);
-    }
-  }
-
-  private class Pusher extends Actor
-  {
-    private List<String> controls = null;
-    private int autoMovementIndex = 0;
-    public Pusher()
-    {
-      super(true, "sprites/pusher.png");  // Rotatable
-    }
-    public void setupPusher(boolean isAutoMode, List<String> controls) {
-      this.controls = controls;
-    }
-
-    /**
-     * Method to move pusher automatically based on the instructions input from properties file
-     */
-    public void autoMoveNext() {
-      if (controls != null && autoMovementIndex < controls.size()) {
-        String[] currentMove = controls.get(autoMovementIndex).split("-");
-        String machine = currentMove[0];
-        String move = currentMove[1];
-        autoMovementIndex++;
-        if (machine.equals("P")) {
-          if (isFinished)
-            return;
-
-          Location next = null;
-          switch (move)
-          {
-            case "L":
-              next = getLocation().getNeighbourLocation(Location.WEST);
-              setDirection(Location.WEST);
-              break;
-            case "U":
-              next = getLocation().getNeighbourLocation(Location.NORTH);
-              setDirection(Location.NORTH);
-              break;
-            case "R":
-              next = getLocation().getNeighbourLocation(Location.EAST);
-              setDirection(Location.EAST);
-              break;
-            case "D":
-              next = getLocation().getNeighbourLocation(Location.SOUTH);
-              setDirection(Location.SOUTH);
-              break;
-          }
-
-          Target curTarget = (Target) getOneActorAt(getLocation(), Target.class);
-          if (curTarget != null){
-            curTarget.show();
-          }
-          if (next != null && canMove(next))
-          {
-            setLocation(next);
-          }
-          refresh();
-        }
-      }
-    }
-  }
-
-  private class Bulldozer extends Actor
-  {
-    public Bulldozer()
-    {
-      super(true, "sprites/bulldozer.png");  // Rotatable
-    }
-  }
-
-  private class Excavator extends Actor
-  {
-    public Excavator()
-    {
-      super(true, "sprites/excavator.png");  // Rotatable
-    }
-  }
-
-  private class Rock extends Actor
-  {
-    public Rock() {super("sprites/rock.png");}
-  }
-
-  private class Clay extends Actor
-  {
-    public Clay() {super("sprites/clay.png");  }
-    }
   // ------------- End of inner classes ------
   //
   private MapGrid grid;
   private int nbHorzCells;
   private int nbVertCells;
-  private final Color borderColor = new Color(100, 100, 100);
+  public static final Color borderColor = new Color(100, 100, 100);
   private Ore[] ores;
   private Target[] targets;
-  private Pusher pusher;
+  private OrePusher pusher;
   private Bulldozer bulldozer;
   private Excavator excavator;
   private boolean isFinished = false;
@@ -192,6 +92,36 @@ public class OreSim extends GameGrid implements GGKeyListener
     return nbTarget;
   }
 
+  private int autoMovementIndex = 0;
+  /**
+   * Method to move pusher automatically based on the instructions input from properties file
+   */
+  public void autoMoveNext() {
+    if (controls != null && autoMovementIndex < controls.size()) {
+      String[] currentMove = controls.get(autoMovementIndex).split("-");
+      String machine = currentMove[0];
+      String move = currentMove[1];
+      autoMovementIndex++;
+      if (machine.equals("P")) {
+        if (isFinished)
+          return;
+
+        Location.CompassDirection direction = switch (move) {
+            case "L" -> Location.CompassDirection.WEST;
+            case "U" -> Location.CompassDirection.NORTH;
+            case "R" -> Location.CompassDirection.EAST;
+            case "D" -> Location.CompassDirection.SOUTH;
+            default -> null;
+        };
+        if (direction == null) {
+          return;
+        }
+        pusher.tryMove(direction);
+        refresh();
+      }
+    }
+  }
+
   /**
    * The main method to run the game
    * @param isDisplayingUI
@@ -220,7 +150,7 @@ public class OreSim extends GameGrid implements GGKeyListener
         String title = String.format("# Ores at Target: %d. Time left: %.2f seconds", oresDone, gameDuration);
         setTitle(title);
         if (isAutoMode) {
-          pusher.autoMoveNext();
+          autoMoveNext();
           updateLogResult();
         }
 
@@ -314,9 +244,9 @@ public class OreSim extends GameGrid implements GGKeyListener
         ElementType a = grid.getCell(location);
         if (a == ElementType.PUSHER)
         {
-          pusher = new Pusher();
+          pusher = new OrePusher();
           addActor(pusher, location);
-          pusher.setupPusher(isAutoMode, controls);
+          pusher.setupMachine(isAutoMode, controls);
         }
         if (a == ElementType.ORE)
         {
@@ -395,38 +325,20 @@ public class OreSim extends GameGrid implements GGKeyListener
     if (isFinished)
       return true;
 
-    Location next = null;
-    switch (evt.getKeyCode())
-    {
-      case KeyEvent.VK_LEFT:
-        next = pusher.getLocation().getNeighbourLocation(Location.WEST);
-        pusher.setDirection(Location.WEST);
-        break;
-      case KeyEvent.VK_UP:
-        next = pusher.getLocation().getNeighbourLocation(Location.NORTH);
-        pusher.setDirection(Location.NORTH);
-        break;
-      case KeyEvent.VK_RIGHT:
-        next = pusher.getLocation().getNeighbourLocation(Location.EAST);
-        pusher.setDirection(Location.EAST);
-        break;
-      case KeyEvent.VK_DOWN:
-        next = pusher.getLocation().getNeighbourLocation(Location.SOUTH);
-        pusher.setDirection(Location.SOUTH);
-        break;
+    Location.CompassDirection direction = switch (evt.getKeyCode()) {
+        case KeyEvent.VK_LEFT -> Location.CompassDirection.WEST;
+        case KeyEvent.VK_UP -> Location.CompassDirection.NORTH;
+        case KeyEvent.VK_RIGHT -> Location.CompassDirection.EAST;
+        case KeyEvent.VK_DOWN -> Location.CompassDirection.SOUTH;
+        default -> null;
+    };
+
+    if (direction == null) {
+      return false;
     }
 
-    Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
-    if (curTarget != null){
-      curTarget.show();
-    }
-
-
-    if (next != null && canMove(next))
-    {
-      pusher.setLocation(next);
-      updateLogResult();
-    }
+    pusher.tryMove(direction);
+    updateLogResult();
     refresh();
     return true;
   }
@@ -436,89 +348,7 @@ public class OreSim extends GameGrid implements GGKeyListener
     return true;
   }
 
-  /**
-   * Check if we can move the pusher into the location
-   * @param location
-   * @return
-   */
-  private boolean canMove(Location location)
-  {
-    // Test if try to move into border, rock or clay
-    Color c = getBg().getColor(location);
-    Rock rock = (Rock)getOneActorAt(location, Rock.class);
-    Clay clay = (Clay)getOneActorAt(location, Clay.class);
-    Bulldozer bulldozer = (Bulldozer)getOneActorAt(location, Bulldozer.class);
-    Excavator excavator = (Excavator)getOneActorAt(location, Excavator.class);
-    if (c.equals(borderColor) || rock != null || clay != null || bulldozer != null || excavator != null)
-      return false;
-    else // Test if there is an ore
-    {
-      Ore ore = (Ore)getOneActorAt(location, Ore.class);
-      if (ore != null)
-      {
 
-          // Try to move the ore
-           ore.setDirection(pusher.getDirection());
-          if (moveOre(ore))
-            return true;
-          else
-            return false;
-
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * When the pusher pushes the ore in 1 direction, this method will be called to check if the ore can move in that direction
-   *  and if it can move, then it changes the location
-   * @param ore
-   * @return
-   */
-  private boolean moveOre(Ore ore)
-  {
-    Location next = ore.getNextMoveLocation();
-    // Test if try to move into border
-    Color c = getBg().getColor(next);;
-    Rock rock = (Rock)getOneActorAt(next, Rock.class);
-    Clay clay = (Clay)getOneActorAt(next, Clay.class);
-    if (c.equals(borderColor) || rock != null || clay != null)
-      return false;
-
-    // Test if there is another ore
-    Ore neighbourOre =
-      (Ore)getOneActorAt(next, Ore.class);
-    if (neighbourOre != null)
-      return false;
-
-    // Reset the target if the ore is moved out of target
-    Location currentLocation = ore.getLocation();
-    List<Actor> actors = getActorsAt(currentLocation);
-    if (actors != null) {
-      for (Actor actor : actors) {
-        if (actor instanceof Target) {
-          Target currentTarget = (Target) actor;
-          currentTarget.show();
-          ore.show(0);
-        }
-      }
-    }
-
-    // Move the ore
-    ore.setLocation(next);
-
-    // Check if we are at a target
-    Target nextTarget = (Target) getOneActorAt(next, Target.class);
-    if (nextTarget != null) {
-      ore.show(1);
-      nextTarget.hide();
-    } else {
-      ore.show(0);
-    }
-
-    return true;
-  }
 
   /**
    * The method will generate a log result for all the movements of all actors
@@ -527,7 +357,7 @@ public class OreSim extends GameGrid implements GGKeyListener
    */
   private void updateLogResult() {
     movementIndex++;
-    List<Actor> pushers = getActors(Pusher.class);
+    List<Actor> pushers = getActors(OrePusher.class);
     List<Actor> ores = getActors(Ore.class);
     List<Actor> targets = getActors(Target.class);
     List<Actor> rocks = getActors(Clay.class);

@@ -1,13 +1,10 @@
 import ore.MapGrid;
-import ore.OreSim;
+import ore.sim.OreSim;
 import ore.PropertiesLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 

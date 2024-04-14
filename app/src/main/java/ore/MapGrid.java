@@ -1,5 +1,6 @@
 package ore;
 import ch.aplu.jgamegrid.*;
+import ore.sim.OreSim;
 
 public class MapGrid
 {
