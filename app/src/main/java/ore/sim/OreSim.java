@@ -20,7 +20,7 @@ public class OreSim extends GameGrid {
     OUTSIDE("OS"), EMPTY("ET"), BORDER("BD"),
     PUSHER("P"), BULLDOZER("B"), EXCAVATOR("E"), ORE("O"),
     ROCK("R"), CLAY("C"), TARGET("T");
-    private String shortType;
+    private final String shortType;
 
     ElementType(String shortType) {
       this.shortType = shortType;
@@ -45,27 +45,27 @@ public class OreSim extends GameGrid {
   // ------------- End of inner classes ------
   //
 
-  private Map<String, Map<Integer, Machine>> machines;
+  private final Map<String, Map<Integer, Machine>> machines;
 
-  private ManualController manualController;
-  private AutoController autoController;
+  private final ManualController manualController;
+  private final AutoController autoController;
 
-  private MapGrid grid;
-  private int nbHorzCells;
-  private int nbVertCells;
+  private final MapGrid grid;
+  private final int nbHorzCells;
+  private final int nbVertCells;
   public static final Color borderColor = new Color(100, 100, 100);
-  private Ore[] ores;
-  private Target[] targets;
+  private final Ore[] ores;
+  private final Target[] targets;
   private OrePusher pusher;
   private Bulldozer bulldozer;
   private Excavator excavator;
   private boolean isFinished = false;
-  private Properties properties;
-  private boolean isAutoMode;
+  private final Properties properties;
+  private final boolean isAutoMode;
   private double gameDuration;
-  private List<String> controls;
+  private final List<String> controls;
   private int movementIndex;
-  private StringBuilder logResult = new StringBuilder();
+  private final StringBuilder logResult = new StringBuilder();
 
 
   public OreSim(Properties properties, MapGrid grid) {
@@ -227,50 +227,43 @@ public class OreSim extends GameGrid {
       for (int x = 0; x < nbHorzCells; x++)
       {
         Location location = new Location(x, y);
+
         ElementType a = grid.getCell(location);
-        if (a == ElementType.PUSHER)
-        {
-          pusher = new OrePusher(machines.get("P").size() + 1);
-          addActor(pusher, location);
-          machines.get("P").put(pusher.getId(), pusher);
-          manualController.setMachine("P", pusher.getId());
-        }
-        if (a == ElementType.ORE)
-        {
-          ores[oreIndex] = new Ore();
-          addActor(ores[oreIndex], location);
-          oreIndex++;
-        }
-        if (a == ElementType.TARGET)
-        {
-          targets[targetIndex] = new Target();
-          addActor(targets[targetIndex], location);
-          targetIndex++;
-        }
 
-        if (a == ElementType.ROCK)
-        {
-          addActor(new Rock(), location);
-        }
-
-        if (a == ElementType.CLAY)
-        {
-          addActor(new Clay(), location);
-        }
-
-        if (a == ElementType.BULLDOZER)
-        {
-          bulldozer = new Bulldozer(machines.get("B").size() + 1);
-          addActor(bulldozer, location);
-          machines.get("B").put(bulldozer.getId(), bulldozer);
-
-        }
-        if (a == ElementType.EXCAVATOR)
-        {
-          excavator = new Excavator(machines.get("E").size() + 1);
-          addActor(excavator, location);
-          machines.get("E").put(excavator.getId(), excavator);
-
+        switch (a) {
+            case PUSHER -> {
+              pusher = new OrePusher(machines.get("P").size() + 1);
+              addActor(pusher, location);
+              machines.get("P").put(pusher.getId(), pusher);
+              manualController.setMachine("P", pusher.getId());
+            }
+            case BULLDOZER -> {
+              bulldozer = new Bulldozer(machines.get("B").size() + 1);
+              addActor(bulldozer, location);
+              machines.get("B").put(bulldozer.getId(), bulldozer);
+            }
+            case EXCAVATOR -> {
+              excavator = new Excavator(machines.get("E").size() + 1);
+              addActor(excavator, location);
+              machines.get("E").put(excavator.getId(), excavator);
+            }
+            case ORE -> {
+              ores[oreIndex] = new Ore();
+              addActor(ores[oreIndex], location);
+              oreIndex++;
+            }
+            case ROCK -> {
+              addActor(new Rock(), location);
+            }
+            case CLAY -> {
+              addActor(new Clay(), location);
+            }
+            case TARGET -> {
+              targets[targetIndex] = new Target();
+              addActor(targets[targetIndex], location);
+              targetIndex++;
+            }
+            default -> {}
         }
       }
     }

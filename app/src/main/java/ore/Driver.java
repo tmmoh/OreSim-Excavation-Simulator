@@ -4,7 +4,7 @@ import ore.sim.OreSim;
 import java.util.Properties;
 
 public class Driver {
-    public static final String DEFAULT_PROPERTIES_PATH = "properties/game1.properties";
+    public static final String DEFAULT_PROPERTIES_PATH = "properties/test2.properties";
 
     public static void main(String[] args) {
         String propertiesPath = DEFAULT_PROPERTIES_PATH;

@@ -130,13 +130,13 @@ class OrePusher extends Machine {
 
 class Bulldozer extends Machine {
     public Bulldozer(int id) {
-        super(id, true, "sprites/bulldozer.png", Collections.emptyList(), List.of(Rock.class));  // Rotatable
+        super(id, true, "sprites/bulldozer.png", Collections.emptyList(), List.of(Clay.class));  // Rotatable
     }
 }
 
 class Excavator extends Machine {
     public Excavator(int id) {
-        super(id, true, "sprites/excavator.png", Collections.emptyList(), List.of(Clay.class));  // Rotatable
+        super(id, true, "sprites/excavator.png", Collections.emptyList(), List.of(Rock.class));  // Rotatable
     }
 }
 

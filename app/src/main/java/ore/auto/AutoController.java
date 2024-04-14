@@ -25,10 +25,7 @@ public class AutoController {
             public void run() {
                 for (String control : controls) {
                     String[] move = control.split("-");
-                    System.out.println(Arrays.toString(move));
-                    Map<Integer, Machine> temp = machines.get(move[0]);
-                    temp.get(1).tryMove(move[1]);
-                    //machines.get(move[0]).get(1).tryMove(move[1]);
+                    machines.get(move[0]).get(1).tryMove(move[1]);
                     sim.updateLogResult();
                     sim.refresh();
                 }

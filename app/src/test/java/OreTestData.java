@@ -2,7 +2,8 @@ import ore.sim.OreSim;
 
 import java.util.*;
 
-public class OreTestData {
+public
+class OreTestData {
     Map<OreSim.ElementType, Set<String>> actorLocations = new HashMap<>();
     int stepNumber;
     private List<String> convertActorComponent(String actorComponent) {
