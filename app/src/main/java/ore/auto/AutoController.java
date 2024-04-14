@@ -1,9 +1,8 @@
 package ore.auto;
 
-import ore.sim.Machine;
-import ore.sim.OreSim;
+import ore.machines.Machine;
+import ore.OreSim;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;

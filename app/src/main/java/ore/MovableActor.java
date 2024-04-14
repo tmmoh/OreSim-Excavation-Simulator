@@ -1,7 +1,9 @@
-package ore.sim;
+package ore;
 
 import ch.aplu.jgamegrid.Actor;
 import ch.aplu.jgamegrid.Location;
+import ore.OreSim;
+import ore.obstacles.Target;
 
 public abstract class MovableActor extends Actor {
     public MovableActor(String filename, int nbSprites) {
@@ -14,7 +16,7 @@ public abstract class MovableActor extends Actor {
 
     protected boolean canMove(Location location) {
         // Test if trying to move into border
-        if (gameGrid.getBg().getColor(location).equals(OreSim.borderColor)) {
+        if (gameGrid.getBg().getColor(location).equals(MapGrid.BORDER_COLOR)) {
             return false;
         }
 

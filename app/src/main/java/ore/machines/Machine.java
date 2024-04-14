@@ -1,11 +1,9 @@
-package ore.sim;
+package ore.machines;
 
 import ch.aplu.jgamegrid.*;
+import ore.MovableActor;
 
-import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public abstract class Machine extends MovableActor {
@@ -120,23 +118,5 @@ public abstract class Machine extends MovableActor {
         return id;
     }
 
-}
-
-class OrePusher extends Machine {
-    public OrePusher(int id) {
-        super(id, true, "sprites/pusher.png", List.of(Ore.class), Collections.emptyList());  // Rotatable
-    }
-}
-
-class Bulldozer extends Machine {
-    public Bulldozer(int id) {
-        super(id, true, "sprites/bulldozer.png", Collections.emptyList(), List.of(Clay.class));  // Rotatable
-    }
-}
-
-class Excavator extends Machine {
-    public Excavator(int id) {
-        super(id, true, "sprites/excavator.png", Collections.emptyList(), List.of(Rock.class));  // Rotatable
-    }
 }
 

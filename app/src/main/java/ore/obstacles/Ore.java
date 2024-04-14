@@ -1,20 +1,13 @@
-package ore.sim;
+package ore.obstacles;
 
 import ch.aplu.jgamegrid.Actor;
 import ch.aplu.jgamegrid.Location;
+import ore.MovableActor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class Target extends Actor {
-    public Target()
-    {
-        super("sprites/target.gif");
-    }
-}
-
-class Ore extends MovableActor implements Pushable {
+public class Ore extends MovableActor {
     Target target = null;
     public Ore() { super("sprites/ore.png",2); }
 
@@ -44,10 +37,3 @@ class Ore extends MovableActor implements Pushable {
     }
 }
 
-class Rock extends Actor implements Destroyable {
-    public Rock() { super("sprites/rock.png"); }
-}
-
-class Clay extends Actor implements Destroyable {
-    public Clay() { super("sprites/clay.png"); }
-}

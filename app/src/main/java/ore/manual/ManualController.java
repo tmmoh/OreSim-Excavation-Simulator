@@ -1,13 +1,11 @@
 package ore.manual;
 
 import ch.aplu.jgamegrid.GGKeyListener;
-import ore.sim.Machine;
-import ore.sim.OreSim;
+import ore.machines.Machine;
+import ore.OreSim;
 
 import java.awt.event.KeyEvent;
-import java.security.Key;
 import java.util.Map;
-import java.util.Properties;
 
 public class ManualController implements GGKeyListener {
     private final OreSim sim;

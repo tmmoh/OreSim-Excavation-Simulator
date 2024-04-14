@@ -1,12 +1,18 @@
-package ore.sim;
+package ore;
 
 import ch.aplu.jgamegrid.*;
-import ore.MapGrid;
 import ore.auto.AutoController;
 import ore.manual.ManualController;
+import ore.obstacles.Rock;
+import ore.obstacles.Target;
+import ore.machines.Bulldozer;
+import ore.machines.Excavator;
+import ore.machines.Machine;
+import ore.machines.Pusher;
+import ore.obstacles.Clay;
+import ore.obstacles.Ore;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -53,18 +59,14 @@ public class OreSim extends GameGrid {
   private final MapGrid grid;
   private final int nbHorzCells;
   private final int nbVertCells;
-  public static final Color borderColor = new Color(100, 100, 100);
   private final Ore[] ores;
   private final Target[] targets;
-  private OrePusher pusher;
-  private Bulldozer bulldozer;
-  private Excavator excavator;
   private boolean isFinished = false;
-  private final Properties properties;
   private final boolean isAutoMode;
+
   private double gameDuration;
-  private final List<String> controls;
   private int movementIndex;
+
   private final StringBuilder logResult = new StringBuilder();
 
 
@@ -73,7 +75,6 @@ public class OreSim extends GameGrid {
     this.grid = grid;
     nbHorzCells = grid.getNbHorzCells();
     nbVertCells = grid.getNbVertCells();
-    this.properties = properties;
 
     ores = new Ore[grid.getNbOres()];
     targets = new Target[grid.getNbOres()];
@@ -81,10 +82,9 @@ public class OreSim extends GameGrid {
     isAutoMode = properties.getProperty("movement.mode").equals("auto");
     gameDuration = Integer.parseInt(properties.getProperty("duration"));
     setSimulationPeriod(Integer.parseInt(properties.getProperty("simulationPeriod")));
-    controls = Arrays.asList(properties.getProperty("machines.movements").split(","));
 
     machines = new HashMap<>();
-    for (String type : List.of("P", "B", "E")) {
+    for (String type : List.of(ElementType.PUSHER.getShortType(), ElementType.BULLDOZER.getShortType(), ElementType.EXCAVATOR.getShortType())) {
       machines.put(type, new HashMap<>());
     }
 
@@ -123,8 +123,8 @@ public class OreSim extends GameGrid {
     }
 
     if (isAutoMode) {
-        doRun();
-        autoController.runControls();
+      doRun();
+      autoController.runControls();
     } else {
       addKeyListener(manualController);
     }
@@ -232,39 +232,42 @@ public class OreSim extends GameGrid {
         ElementType a = grid.getCell(location);
 
         switch (a) {
-            case PUSHER -> {
-              pusher = new OrePusher(machines.get("P").size() + 1);
-              addActor(pusher, location);
-              machines.get("P").put(pusher.getId(), pusher);
-              manualController.setMachine("P", pusher.getId());
-            }
-            case BULLDOZER -> {
-              bulldozer = new Bulldozer(machines.get("B").size() + 1);
-              addActor(bulldozer, location);
-              machines.get("B").put(bulldozer.getId(), bulldozer);
-            }
-            case EXCAVATOR -> {
-              excavator = new Excavator(machines.get("E").size() + 1);
-              addActor(excavator, location);
-              machines.get("E").put(excavator.getId(), excavator);
-            }
-            case ORE -> {
-              ores[oreIndex] = new Ore();
-              addActor(ores[oreIndex], location);
-              oreIndex++;
-            }
-            case ROCK -> {
-              addActor(new Rock(), location);
-            }
-            case CLAY -> {
-              addActor(new Clay(), location);
-            }
-            case TARGET -> {
-              targets[targetIndex] = new Target();
-              addActor(targets[targetIndex], location);
-              targetIndex++;
-            }
-            default -> {}
+          case PUSHER -> {
+            String type = ElementType.PUSHER.getShortType();
+            Pusher pusher = new Pusher(machines.get(type).size() + 1);
+            addActor(pusher, location);
+            machines.get(type).put(pusher.getId(), pusher);
+            manualController.setMachine(type, pusher.getId());
+          }
+          case ORE -> {
+            ores[oreIndex] = new Ore();
+            addActor(ores[oreIndex], location);
+            oreIndex++;
+          }
+          case TARGET -> {
+            targets[targetIndex] = new Target();
+            addActor(targets[targetIndex], location);
+            targetIndex++;
+          }
+          case ROCK -> {
+            addActor(new Rock(), location);
+          }
+          case CLAY -> {
+            addActor(new Clay(), location);
+          }
+          case BULLDOZER -> {
+            String type = ElementType.BULLDOZER.getShortType();
+            Bulldozer bulldozer = new Bulldozer(machines.get(type).size() + 1);
+            addActor(bulldozer, location);
+            machines.get(type).put(bulldozer.getId(), bulldozer);
+          }
+          case EXCAVATOR -> {
+            String type = ElementType.EXCAVATOR.getShortType();
+            Excavator excavator = new Excavator(machines.get(type).size() + 1);
+            addActor(excavator, location);
+            machines.get(type).put(excavator.getId(), excavator);
+          }
+          default -> {}
         }
       }
     }
@@ -292,7 +295,7 @@ public class OreSim extends GameGrid {
           bg.fillCell(location, Color.lightGray);
         }
         if (a == ElementType.BORDER)  // Border
-          bg.fillCell(location, borderColor);
+          bg.fillCell(location, MapGrid.BORDER_COLOR);
       }
     }
   }
@@ -306,7 +309,7 @@ public class OreSim extends GameGrid {
    */
   public void updateLogResult() {
     movementIndex++;
-    List<Actor> pushers = getActors(OrePusher.class);
+    List<Actor> pushers = getActors(Pusher.class);
     List<Actor> ores = getActors(Ore.class);
     List<Actor> targets = getActors(Target.class);
     List<Actor> rocks = getActors(Rock.class);
