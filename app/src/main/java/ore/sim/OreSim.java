@@ -118,7 +118,6 @@ public class OreSim extends GameGrid {
     GGBackground bg = getBg();
     drawBoard(bg);
     drawActors();
-    addKeyListener(manualController);
     if (isDisplayingUI) {
       show();
     }
@@ -126,6 +125,8 @@ public class OreSim extends GameGrid {
     if (isAutoMode) {
         doRun();
         autoController.runControls();
+    } else {
+      addKeyListener(manualController);
     }
 
 
