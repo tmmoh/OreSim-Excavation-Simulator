@@ -3,11 +3,16 @@ import ch.aplu.jgamegrid.*;
 
 import java.awt.*;
 
+/**
+ * Represents the grid map of the simulation environment.
+ * Each cell of the grid contains an element type defining its characteristics.
+ * */
 public class MapGrid {
     private final OreSim.ElementType[][] mapElements; // = new OreSim.ElementType[nbHorzCells][nbVertCells];
     private int nbStones = 0;
     public static final Color BORDER_COLOR = new Color(100, 100, 100);
 
+    // Map layouts represented as strings with information on the number of hor/vert cells
     private final static String map_0 =
         "    xxxxx          " + // 0 (19)
         "    x...x          " + // 1
@@ -20,6 +25,7 @@ public class MapGrid {
         "xxxxx.DDD.xPxx...ox" + // 8
         "    x.....xxxxxxxxx" + // 9
         "    xxxxxxx        ";  //10
+
     private final static int nbHorzCells_0 = 19;
     private final static int nbVertCells_0 = 11;
 
@@ -53,16 +59,18 @@ public class MapGrid {
 
     /**
     * Mapping from the string to a HashMap to prepare drawing
-    * @param model
+     *
+    * @param model The index of the map model to use.
     */
     public MapGrid(int model) {
         MapGrid.model = model;
         int nbHorzCells = nbHorzCellsModel[model];
         int nbVertCells = nbVertCellsModel[model];
 
+        // Initialize the grid map elements array
         mapElements = new OreSim.ElementType[nbHorzCells][nbVertCells];
 
-        // Copy structure into integer array
+        // Populate integer array
         for (int k = 0; k < nbVertCellsModel[model]; k++) {
             for (int i = 0; i < nbHorzCellsModel[model]; i++) {
                 mapElements[i][k] = switch (mapModel[model].charAt(nbHorzCellsModel[model] * k + i)) {
@@ -82,18 +90,39 @@ public class MapGrid {
         }
     }
 
+    /**
+     * Gets the number of horizontal cells in the grid.
+     *
+     * @return The number of horizontal cells.
+     * */
     public int getNbHorzCells() {
         return nbHorzCellsModel[model];
     }
 
+    /**
+     * Gets the number of vertical cells in the grid.
+     *
+     * @return The number of vertical cells.
+     * */
     public int getNbVertCells() {
         return nbVertCellsModel[model];
     }
 
+    /**
+     * Gets the number of stones in the grid.
+     *
+     * @return The number of stones.
+     * */
     public int getNbOres() {
         return nbStones;
     }
 
+    /**
+     * Retrieves the element type at the specified location in the grid.
+     *
+     * @param location The location to retrieve the element type from.
+     * @return         The element type at the specified location.
+     * */
     public OreSim.ElementType getCell(Location location) {
         return mapElements[location.x][location.y];
     }
