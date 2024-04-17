@@ -12,15 +12,33 @@ public class ManualController implements GGKeyListener {
     private final Map<String, Map<Integer, Machine>> machines;
     private Machine machine;
 
+    /**
+     * Constructor to initialise ManualController with the simulation instance and machine map.
+     *
+     * @param sim       The OreSim instance representing the main simulation.
+     * @param machines  A map containing machines organised by type and ID.
+     * */
     public ManualController(OreSim sim, Map<String, Map<Integer, Machine>> machines) {
         this.sim = sim;
         this.machines = machines;
     }
 
+    /**
+     * Sets the current machine to control based on type and ID.
+     *
+     * @param type  The type of machine.
+     * @param id    The ID of the machine.
+     * */
     public void setMachine(String type, int id) {
         this.machine = machines.get(type).get(id);
     }
 
+    /**
+     * Handles the keyPressed event for manual machine control and simulation update.
+     *
+     * @param keyEvent  The KeyEvent object representing the key that was pressed.
+     * @return          True if the key event is processed, false otherwise.
+     * */
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
 
@@ -37,16 +55,22 @@ public class ManualController implements GGKeyListener {
             return true;
         }
 
-
+        // Try to move the current machine and update simulation log.
         if (machine.tryMove(keyEvent)) {
             sim.updateLogResult();
         }
 
-        sim.refresh();
+        sim.refresh(); // Refresh the simulation display
 
         return true;
     }
 
+    /**
+     * Handles the keyReleased event
+     *
+     * @param keyEvent The KeyEvent object representing the key that was released.
+     * @return         True indicates that the event is processed, false otherwise.
+     * */
     @Override
     public boolean keyReleased(KeyEvent keyEvent) {
         return true;
