@@ -23,6 +23,7 @@ import org.apache.commons.text.WordUtils;
 
 public class OreSim extends GameGrid {
   // ------------- Inner classes -------------
+  // Enum to represent different types of elements on the game grid
   public enum ElementType{
     OUTSIDE("OS"), EMPTY("ET"), BORDER("BD"),
     PUSHER("P"), BULLDOZER("B"), EXCAVATOR("E"), ORE("O"),
@@ -36,7 +37,7 @@ public class OreSim extends GameGrid {
     public String getShortType() {
       return shortType;
     }
-
+    // Method to retrieve ElementType based on its short type
     public static ElementType getElementByShortType(String shortType) {
       ElementType[] types = ElementType.values();
       for (ElementType type: types) {
@@ -70,7 +71,12 @@ public class OreSim extends GameGrid {
 
   private final StringBuilder logResult = new StringBuilder();
 
-
+  /**
+   * Constructor for the OreSim class, initialises the game grid, controllers, machines and other parameters
+   *
+   * @param properties Properties object containing simulation settings
+   * @param grid       MapGrid object representing the game grid
+   */
   public OreSim(Properties properties, MapGrid grid) {
     super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
     this.grid = grid;
@@ -94,10 +100,10 @@ public class OreSim extends GameGrid {
   }
 
   /**
-   * Check the number of ores that are collected
-   * @return
+   * Method to check the number of ores that have been collected
+   *
+   * @return  A string containing the simulation log
    */
-
   private int checkOresDone() {
     int nbTarget = 0;
     for (int i = 0; i < grid.getNbOres(); i++)
@@ -112,10 +118,11 @@ public class OreSim extends GameGrid {
 
   /**
    * The main method to run the game
-   * @param isDisplayingUI
-   * @return
+   * @param isDisplayingUI  Flag indicating whether to display GUI
+   * @return                A string containing the simulation log
    */
   public String runApp(boolean isDisplayingUI) {
+    // Draw the initial game board
     GGBackground bg = getBg();
     drawBoard(bg);
     drawActors();
@@ -123,6 +130,7 @@ public class OreSim extends GameGrid {
       show();
     }
 
+    // Run simulation based on auto or manual mode
     if (isAutoMode) {
       doRun();
       autoController.runControls();
@@ -130,7 +138,7 @@ public class OreSim extends GameGrid {
       addKeyListener(manualController);
     }
 
-
+    // Continue simulation until all ores are collected or time runs out
     int oresDone = checkOresDone();
     double ONE_SECOND = 1000.0;
     while(oresDone < grid.getNbOres() && gameDuration >= 0) {
@@ -148,6 +156,7 @@ public class OreSim extends GameGrid {
       }
     }
 
+    // Pause simulation and display final status
     doPause();
 
     if (oresDone == grid.getNbOres()) {
@@ -156,6 +165,7 @@ public class OreSim extends GameGrid {
       setTitle("Mission Failed. You ran out of time");
     }
 
+    // Update and return simulation log
     updateStatistics();
     isFinished = true;
     return logResult.toString();
@@ -163,8 +173,8 @@ public class OreSim extends GameGrid {
 
   /**
    * Transform the list of actors to a string of location for a specific kind of actor.
-   * @param actors
-   * @return
+   * @param actors  A list of Actor objects whose locations need to be represented.
+   * @return        A string representing the locations of the actors in format "x1-y1, x2-y2,..."
    */
   private String actorLocations(List<Actor> actors) {
     StringBuilder stringBuilder = new StringBuilder();
@@ -192,21 +202,24 @@ public class OreSim extends GameGrid {
 
 
   /**
-   * Students need to modify this method so it can write an actual statistics into the statistics file. It currently
-   *  only writes the sample data.
+   * Method to update statistics and write them to a file
    */
   private void updateStatistics() {
+    // Initialize file writer
     File statisticsFile = new File("statistics.txt");
     FileWriter fileWriter = null;
     try {
       fileWriter = new FileWriter(statisticsFile);
 
+      // Iterate over each machine and write its statistics to the file
       FileWriter finalFileWriter = fileWriter;
       machines.forEach((type, machines) -> {
         machines.forEach((id, m) -> {
           try {
             ElementType t = ElementType.getElementByShortType(type);
             finalFileWriter.write( WordUtils.capitalize(t.name().toLowerCase()) + "-" + m.getId() + " Moves: " + m.getMoves() + "\n");
+
+            // Write statistics for destroyed objects related to the machine
             m.getDestroyed().forEach((k, v) -> {
                 try {
                     finalFileWriter.write( WordUtils.capitalize(t.name().toLowerCase()) + "-" + m.getId() + " " + k.getSimpleName() + " removed: " + v + "\n");
@@ -221,7 +234,9 @@ public class OreSim extends GameGrid {
       });
 
       } catch (IOException e) {
+      // Handle IO Exception
     } finally {
+      // Close the file writer
       try {
         fileWriter.close();
       } catch (IOException e) {
@@ -230,7 +245,11 @@ public class OreSim extends GameGrid {
     }
   }
 
-  // Helper method to calculate the total number of rocks removed by excavator
+  /**
+   * Helper method to calculate the total number of rocks removed by the excavator
+   *
+   * @return The total number of rocks removed by the excavator
+   * */
   private int getNumberOfRocksRemoved() {
     int rocksRemoved = 0;
     List<Actor> rocks = getActors(Rock.class);
@@ -243,7 +262,11 @@ public class OreSim extends GameGrid {
     return rocksRemoved;
   }
 
-  // Helper method to calculate the total number of clay removed by bulldozer
+  /**
+   * Helper method to calculate the total number of clay removed by bulldozer.
+   *
+   * @return The total amount of clay removed by the bulldozer.
+   * */
   private int getNumberOfClayRemoved() {
     int clayRemoved = 0;
     List<Actor> clays = getActors(Clay.class);
@@ -272,6 +295,7 @@ public class OreSim extends GameGrid {
 
         ElementType a = grid.getCell(location);
 
+        // Add actors based on the type of element on the grid
         switch (a) {
           case PUSHER -> {
             String type = ElementType.PUSHER.getShortType();
@@ -318,7 +342,8 @@ public class OreSim extends GameGrid {
 
   /**
    * Draw the basic board with outside color and border color
-   * @param bg
+   *
+   * @param bg  The background object to draw on
    */
 
   private void drawBoard(GGBackground bg)
