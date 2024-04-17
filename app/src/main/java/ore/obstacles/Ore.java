@@ -11,6 +11,12 @@ public class Ore extends MovableActor {
     Target target = null;
     public Ore() { super("sprites/ore.png",2); }
 
+    /**
+     * Attempts to move the ore in the specified direction.
+     *
+     * @param dir   The compass direction in which the ore intends to move.
+     * @return      True if the move is successful, false otherwise.
+     * */
     @Override
     public boolean tryMove(Location.CompassDirection dir) {
         // Reset target if moving out of it
@@ -21,6 +27,7 @@ public class Ore extends MovableActor {
             return false;
         }
 
+        // Show target if the ore moves onto it
         if (!targets.isEmpty()) {
             targets.get(0).show();
             this.show(0);
