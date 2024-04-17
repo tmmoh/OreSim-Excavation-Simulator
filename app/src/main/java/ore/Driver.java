@@ -12,9 +12,11 @@ public class Driver {
         }
         final Properties properties = PropertiesLoader.loadPropertiesFile(propertiesPath);
 
+        // Retrieve the map model from the properties sand initialize the map grid
         int model = Integer.parseInt(properties.getProperty("map"));
         MapGrid grid = new MapGrid(model);
 
+        // Create an instance of OreSim with the loaded properties and map grid, run the simulation
         String logResult = new OreSim(properties, grid).runApp(true);
         System.out.println("logResult = " + logResult);
     }
