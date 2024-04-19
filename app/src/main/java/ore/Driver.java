@@ -17,7 +17,6 @@ public class Driver {
         MapGrid grid = new MapGrid(model);
 
         // Create an instance of OreSim with the loaded properties and map grid, run the simulation
-
         String logResult = new OreSim(properties, grid).runApp(true);
         System.out.println("logResult = " + logResult);
     }

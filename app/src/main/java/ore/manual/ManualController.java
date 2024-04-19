@@ -55,12 +55,12 @@ public class ManualController implements GGKeyListener {
             return true;
         }
 
-
+        // Try to move the current machine and update simulation log.
         if (machine.tryMove(keyEvent)) {
             sim.updateLogResult();
         }
 
-        sim.refresh();
+        sim.refresh(); // Refresh the simulation display
 
         return true;
     }

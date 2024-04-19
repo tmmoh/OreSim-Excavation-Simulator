@@ -59,6 +59,7 @@ public abstract class MovableActor extends Actor {
         setDirection(dir);
         Location next = getNextMoveLocation();
 
+        // Move the actor if it can move to the next location
         if (canMove(next)) {
             move();
             return true;

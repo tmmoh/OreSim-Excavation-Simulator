@@ -26,6 +26,7 @@ public class Ore extends MovableActor {
             return false;
         }
 
+        // Show target if the ore moves onto it
         if (!targets.isEmpty()) {
             targets.get(0).show();
             this.show(0);

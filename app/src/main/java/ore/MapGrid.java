@@ -25,6 +25,7 @@ public class MapGrid {
         "xxxxx.DDD.xPxx...ox" + // 8
         "    x.....xxxxxxxxx" + // 9
         "    xxxxxxx        ";  //10
+
     private final static int nbHorzCells_0 = 19;
     private final static int nbVertCells_0 = 11;
 
@@ -58,7 +59,8 @@ public class MapGrid {
 
     /**
     * Mapping from the string to a HashMap to prepare drawing
-    * @param model
+     *
+    * @param model The index of the map model to use.
     */
     public MapGrid(int model) {
         MapGrid.model = model;
@@ -68,7 +70,7 @@ public class MapGrid {
         // Initialize the grid map elements array
         mapElements = new OreSim.ElementType[nbHorzCells][nbVertCells];
 
-        // Copy structure into integer array
+        // Populate integer array
         for (int k = 0; k < nbVertCellsModel[model]; k++) {
             for (int i = 0; i < nbHorzCellsModel[model]; i++) {
                 mapElements[i][k] = switch (mapModel[model].charAt(nbHorzCellsModel[model] * k + i)) {
@@ -115,6 +117,12 @@ public class MapGrid {
         return nbOres;
     }
 
+    /**
+     * Retrieves the element type at the specified location in the grid.
+     *
+     * @param location The location to retrieve the element type from.
+     * @return         The element type at the specified location.
+     * */
     public OreSim.ElementType getCell(Location location) {
         return mapElements[location.x][location.y];
     }
