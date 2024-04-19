@@ -12,12 +12,22 @@ public class AutoController {
     private final Map<String, Map<Integer, Machine>> machines;
     private final List<String> controls;
 
+    /**
+     * Constructor to initialise the AutoController with the simulation instance.
+     *
+     * @param sim           The OreSim instance representing the main simulation.
+     * @param properties    The properties containing machine movement information.
+     * @param machines      A map containing machines organised by type and ID.
+     * */
     public AutoController(OreSim sim, Properties properties, Map<String, Map<Integer, Machine>> machines) {
         this.sim = sim;
         this.machines = machines;
         this.controls = List.of(properties.getProperty("machines.movements").split(","));
     }
 
+    /**
+     * Executes predefined movements for machines.
+     * */
     public void runControls() {
          class RunThread extends Thread {
             @Override

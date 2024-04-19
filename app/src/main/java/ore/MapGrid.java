@@ -3,11 +3,16 @@ import ch.aplu.jgamegrid.*;
 
 import java.awt.*;
 
+/**
+ * Represents the grid map of the simulation environment.
+ * Each cell of the grid contains an element type defining its characteristics.
+ * */
 public class MapGrid {
     private final OreSim.ElementType[][] mapElements; // = new OreSim.ElementType[nbHorzCells][nbVertCells];
-    private int nbStones = 0;
+    private int nbOres = 0;
     public static final Color BORDER_COLOR = new Color(100, 100, 100);
 
+    // Map layouts represented as strings with information on the number of hor/vert cells
     private final static String map_0 =
         "    xxxxx          " + // 0 (19)
         "    x...x          " + // 1
@@ -60,6 +65,7 @@ public class MapGrid {
         int nbHorzCells = nbHorzCellsModel[model];
         int nbVertCells = nbVertCellsModel[model];
 
+        // Initialize the grid map elements array
         mapElements = new OreSim.ElementType[nbHorzCells][nbVertCells];
 
         // Copy structure into integer array
@@ -69,7 +75,7 @@ public class MapGrid {
                     case ' ' -> OreSim.ElementType.OUTSIDE;  // Empty outside case
                     case '.' -> OreSim.ElementType.EMPTY;  // Empty inside
                     case 'x' -> OreSim.ElementType.BORDER;  // Border
-                    case '*' -> { nbStones++; yield OreSim.ElementType.ORE; } // Stones
+                    case '*' -> { nbOres++; yield OreSim.ElementType.ORE; } // Ores
                     case 'o' -> OreSim.ElementType.TARGET;  // Target positions
                     case 'P' -> OreSim.ElementType.PUSHER;
                     case 'B' -> OreSim.ElementType.BULLDOZER;
@@ -82,16 +88,31 @@ public class MapGrid {
         }
     }
 
+    /**
+     * Gets the number of horizontal cells in the grid.
+     *
+     * @return The number of horizontal cells.
+     * */
     public int getNbHorzCells() {
         return nbHorzCellsModel[model];
     }
 
+    /**
+     * Gets the number of vertical cells in the grid.
+     *
+     * @return The number of vertical cells.
+     * */
     public int getNbVertCells() {
         return nbVertCellsModel[model];
     }
 
+    /**
+     * Gets the number of ores in the grid.
+     *
+     * @return The number of ores.
+     * */
     public int getNbOres() {
-        return nbStones;
+        return nbOres;
     }
 
     public OreSim.ElementType getCell(Location location) {

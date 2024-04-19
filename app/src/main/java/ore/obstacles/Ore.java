@@ -8,9 +8,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Ore extends MovableActor {
-    Target target = null;
     public Ore() { super("sprites/ore.png",2); }
 
+    /**
+     * Attempts to move the ore in the specified direction.
+     *
+     * @param dir   The compass direction in which the ore intends to move.
+     * @return      True if the move is successful, false otherwise.
+     * */
     @Override
     public boolean tryMove(Location.CompassDirection dir) {
         // Reset target if moving out of it
@@ -27,7 +32,7 @@ public class Ore extends MovableActor {
         }
 
         // Update target if moving into it
-        target = (Target) gameGrid.getOneActorAt(getLocation(), Target.class);
+        Target target = (Target) gameGrid.getOneActorAt(getLocation(), Target.class);
         if (target != null) {
             show(1);
             target.hide();
