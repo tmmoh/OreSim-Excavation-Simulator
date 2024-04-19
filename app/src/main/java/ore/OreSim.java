@@ -161,6 +161,7 @@ public class OreSim extends GameGrid {
             setTitle("Mission Complete. Well done!");
         } else if (gameDuration < 0) {
             setTitle("Mission Failed. You ran out of time");
+
         }
 
         // Update and return simulation log
@@ -309,6 +310,7 @@ public class OreSim extends GameGrid {
                 }
             }
         }
+
         System.out.println("ores = " + (ores));
         setPaintOrder(Target.class);
     }
