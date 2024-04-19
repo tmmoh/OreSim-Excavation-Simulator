@@ -1,8 +1,8 @@
 package ore;
 
 import ch.aplu.jgamegrid.*;
-import ore.auto.AutoController;
-import ore.manual.ManualController;
+import ore.controllers.AutoController;
+import ore.controllers.ManualController;
 import ore.obstacles.Rock;
 import ore.obstacles.Target;
 import ore.machines.Bulldozer;

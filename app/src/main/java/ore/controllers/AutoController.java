@@ -1,4 +1,4 @@
-package ore.auto;
+package ore.controllers;
 
 import ore.machines.Machine;
 import ore.OreSim;
@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class AutoController {
-    private final OreSim sim;
-    private final Map<String, Map<Integer, Machine>> machines;
+public class AutoController extends SimController {
     private final List<String> controls;
 
     /**
@@ -20,8 +18,7 @@ public class AutoController {
      * @param machines      A map containing machines organised by type and ID.
      * */
     public AutoController(OreSim sim, Properties properties, Map<String, Map<Integer, Machine>> machines) {
-        this.sim = sim;
-        this.machines = machines;
+        super(sim, machines);
         this.controls = List.of(properties.getProperty("machines.movements").split(","));
     }
 
@@ -34,9 +31,10 @@ public class AutoController {
             public void run() {
                 for (String control : controls) {
                     String[] move = control.split("-");
-                    machines.get(move[0]).get(1).tryMove(move[1]);
-                    sim.updateLogResult();
-                    sim.refresh();
+                    // Auto control machines are always id 1
+                    getMachine(move[0], 1).tryMove(move[1]);
+                    updateLog();
+                    refreshSim();
                 }
             }
         }

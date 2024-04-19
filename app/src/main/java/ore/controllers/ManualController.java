@@ -1,4 +1,4 @@
-package ore.manual;
+package ore.controllers;
 
 import ch.aplu.jgamegrid.GGKeyListener;
 import ore.machines.Machine;
@@ -7,9 +7,7 @@ import ore.OreSim;
 import java.awt.event.KeyEvent;
 import java.util.Map;
 
-public class ManualController implements GGKeyListener {
-    private final OreSim sim;
-    private final Map<String, Map<Integer, Machine>> machines;
+public class ManualController extends SimController implements GGKeyListener {
     private Machine machine;
 
     /**
@@ -19,8 +17,7 @@ public class ManualController implements GGKeyListener {
      * @param machines  A map containing machines organised by type and ID.
      * */
     public ManualController(OreSim sim, Map<String, Map<Integer, Machine>> machines) {
-        this.sim = sim;
-        this.machines = machines;
+        super(sim, machines);
     }
 
     /**
@@ -30,7 +27,7 @@ public class ManualController implements GGKeyListener {
      * @param id    The ID of the machine.
      * */
     public void setMachine(String type, int id) {
-        this.machine = machines.get(type).get(id);
+        this.machine = getMachine(type, id);
     }
 
     /**
@@ -41,8 +38,8 @@ public class ManualController implements GGKeyListener {
      * */
     @Override
     public boolean keyPressed(KeyEvent keyEvent) {
-
         // Code to manually change machine
+        /*
         String m = switch (keyEvent.getKeyCode()) {
             case KeyEvent.VK_1 -> "P";
             case KeyEvent.VK_2 -> "B";
@@ -54,13 +51,16 @@ public class ManualController implements GGKeyListener {
             setMachine(m, 1);
             return true;
         }
+        */
 
         // Try to move the current machine and update simulation log.
         if (machine.tryMove(keyEvent)) {
-            sim.updateLogResult();
+            // Only update log if move was successful
+            updateLog();
         }
 
-        sim.refresh(); // Refresh the simulation display
+        // Refresh the simulation display
+        refreshSim();
 
         return true;
     }
