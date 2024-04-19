@@ -86,3 +86,10 @@ Additional obstacles can be implemented easily, all that is required is the crea
 
 Through the use of the abstract `SimController` class, any new set of controls can be implemented by implementing a new subclass. As long as this class can implement the methods `void startControls()` and `void stopControls()`, it will be able to be used by `OreSim`. In the `OreSim` class, the constructor would need to handle creating the correct controller from the property file, but then the above methods should be able to handle adding/removing any event listeners required to operate. For example, a `JoystickController` class would need an event listener for joystick events, added when `startControls()` is run. An `AutonomousController` could be implemented by providing its constructor the locations of all actors, and its `startControls()` method could then generate optimal movement sequences apply them in the same way as the `AutoController` does.
 
+![Domain Model](DomainModel.png)
+
+![Static Design Model](StaticDesignModel.png)
+
+![Dynamic Design Model](DynamicDesignModel.png)
+
+

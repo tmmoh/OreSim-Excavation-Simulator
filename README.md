@@ -7,5 +7,10 @@
 - Spencer Vaughan | stvaughan@student.unimelb.edu.au | @SpencerTVaughan
 
  ## Documentation files
-- Link to Draw.io 
-- Link to Google doc
+Domain Model: documentation/DomainModel.puml
+
+Static Design Model: https://drive.google.com/file/d/1dKgl_o6CknN0pXplfPbNEdAlveM8XBMr/view?usp=sharing
+
+Dynamic Design Model: 
+
+Report: documentation/Report.md

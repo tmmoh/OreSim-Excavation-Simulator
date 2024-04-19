@@ -1,0 +1,25 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+
+AutoController -> RunThread : new RunThread()
+loop for control : controls
+    RunThread -> AutoController : machine = getMachine(type, 1)
+    RunThread -> Machine : tryMove(direction)
+    Machine -> Machine : next = getNextMoveLocation():
+    Machine -> Machine : canMove = canMove(next)
+    alt canMove == true
+        Machine -> GameGrid : actor = getOneActorAt(next)
+        Machine -> Machine : canDestroy = canDestroy(actor)
+        alt canDestroy == true
+            Machine -> Actor : removeSelf()
+        end
+        Machine -> Machine : move();
+        Machine -> RunThread : return true;
+    else
+        Machine -> RunThread : return false;
+    end
+    RunThread -> AutoController : updateLog()
+    RunThread -> AutoController : refreshSim()
+end
+@enduml
