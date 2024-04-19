@@ -29,6 +29,22 @@ public class ManualController extends SimController implements GGKeyListener {
     }
 
     /**
+     * Adds a key listener to allow for keyboard input
+     */
+    @Override
+    public void startControls() {
+        getSim().addKeyListener(this);
+    }
+
+    /**
+     * Removes the key listener, no longer allowing for keyboard input
+     */
+    @Override
+    public void stopControls() {
+        getSim().removeKeyListener(this);
+    }
+
+    /**
      * Sets the current machine to control based on type and ID.
      *
      * @param type  The type of machine.
