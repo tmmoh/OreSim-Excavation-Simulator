@@ -1,3 +1,11 @@
+/**
+ * Workshop 03
+ * Team 19
+ * Team Members:
+ * - Taher Mohamed, tmmoh@student.unimelbe.edu, @tmmoh, @The-Real-T
+ * - Noel Abraham, ncabraham@student.unimelb.edu.au, @noelabraham1
+ * - Spencer Vaughan, stvaughan@student.unimelb.edu.au, @SpencerTVaughan
+ */
 package ore.controllers;
 
 import ch.aplu.jgamegrid.GGKeyListener;
@@ -18,6 +26,22 @@ public class ManualController extends SimController implements GGKeyListener {
      * */
     public ManualController(OreSim sim, Map<String, Map<Integer, Machine>> machines) {
         super(sim, machines);
+    }
+
+    /**
+     * Adds a key listener to allow for keyboard input
+     */
+    @Override
+    public void startControls() {
+        getSim().addKeyListener(this);
+    }
+
+    /**
+     * Removes the key listener, no longer allowing for keyboard input
+     */
+    @Override
+    public void stopControls() {
+        getSim().removeKeyListener(this);
     }
 
     /**

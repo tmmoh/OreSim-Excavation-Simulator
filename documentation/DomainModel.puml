@@ -1,0 +1,73 @@
+@startuml
+hide circle
+hide empty members
+'https://plantuml.com/class-diagram
+
+class Element {
+    location
+}
+class Machine {
+    ID
+    moves
+    obstacleInWay
+}
+class Ore {
+    atTarget?
+}
+class Rock
+class Clay
+class OrePusher
+class Excavator {
+    rocks destroyed
+}
+class Bulldozer {
+    clay destroyed
+}
+class Target
+
+Machine <|-- OrePusher
+Machine <|-- Bulldozer
+Machine <|-- Excavator
+Element <|-- Machine
+Element <|-- Ore
+Element <|-- Rock
+Element <|-- Target
+Element <|-- Clay
+
+class MachineController {
+    instruction
+}
+
+class AutoController {
+    instruction list
+}
+
+MachineController <|-- ArrowKeys
+MachineController <|-- AutoController
+
+MachineController "0..*  " -right- "1" Machine : controls >
+
+class Map {
+    borders
+    locations
+}
+
+Map " 1  " -right- "  0..* " Element : has in cell >
+
+class Simulator {
+    isRunning?
+    targetsFilled
+    isAutoMode
+}
+
+Simulator "1" -right- "1" Map : simulates >
+
+Bulldozer -[hidden]-> OrePusher
+
+OrePusher "0..*" -- "  0..*" Ore : Pushes >
+Excavator "0..1" -- "0..*" Rock : Destroys >
+Bulldozer "0..1" -- "0..*" Clay : Destroys >
+
+Ore "0..1" -- "0..*" Target : can be placed in >
+
+@enduml

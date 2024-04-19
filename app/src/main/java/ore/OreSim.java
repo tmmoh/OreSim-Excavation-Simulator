@@ -1,8 +1,17 @@
+/**
+ * Workshop 03
+ * Team 19
+ * Team Members:
+ * - Taher Mohamed, tmmoh@student.unimelbe.edu, @tmmoh, @The-Real-T
+ * - Noel Abraham, ncabraham@student.unimelb.edu.au, @noelabraham1
+ * - Spencer Vaughan, stvaughan@student.unimelb.edu.au, @SpencerTVaughan
+ */
 package ore;
 
 import ch.aplu.jgamegrid.*;
 import ore.controllers.AutoController;
 import ore.controllers.ManualController;
+import ore.controllers.SimController;
 import ore.obstacles.Rock;
 import ore.obstacles.Target;
 import ore.machines.Bulldozer;
@@ -58,8 +67,7 @@ public class OreSim extends GameGrid {
 
     private final Map<String, Map<Integer, Machine>> machines;
 
-    private final ManualController manualController;
-    private final AutoController autoController;
+    private final SimController controller;
 
     private final MapGrid grid;
     private final int nbHorzCells;
@@ -97,8 +105,11 @@ public class OreSim extends GameGrid {
             machines.put(type, new TreeMap<>());
         }
 
-        autoController = new AutoController(this, properties, machines);
-        manualController = new ManualController(this, machines);
+        if (isAutoMode) {
+            controller = new AutoController(this, properties, machines);
+        } else {
+            controller = new ManualController(this, machines);
+        }
     }
 
     /**
@@ -127,11 +138,8 @@ public class OreSim extends GameGrid {
 
         if (isAutoMode) {
             doRun();
-            autoController.runControls();
-        } else {
-            // Only take keyboard input when not in auto mode
-            addKeyListener(manualController);
         }
+        controller.startControls();
 
 
         int oresDone = checkOresDone();
@@ -163,10 +171,10 @@ public class OreSim extends GameGrid {
             setTitle("Mission Failed. You ran out of time");
 
         }
-
+        controller.stopControls();
         // Update and return simulation log
         updateStatistics();
-        removeKeyListener(manualController);
+
         return logResult.toString();
     }
 
@@ -276,7 +284,9 @@ public class OreSim extends GameGrid {
                         Pusher pusher = new Pusher(machines.get(type).size() + 1);
                         addActor(pusher, location);
                         machines.get(type).put(pusher.getId(), pusher);
-                        manualController.setMachine(type, pusher.getId());
+                        if (!isAutoMode) {
+                            ((ManualController) controller).setMachine(type, pusher.getId());
+                        }
                     }
                     case ORE -> {
                         Ore ore = new Ore();
