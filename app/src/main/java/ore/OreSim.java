@@ -1,9 +1,18 @@
 package ore;
 
 import ch.aplu.jgamegrid.*;
+import ore.auto.AutoController;
+import ore.manual.ManualController;
+import ore.obstacles.Rock;
+import ore.obstacles.Target;
+import ore.machines.Bulldozer;
+import ore.machines.Excavator;
+import ore.machines.Machine;
+import ore.machines.Pusher;
+import ore.obstacles.Clay;
+import ore.obstacles.Ore;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,579 +20,353 @@ import java.util.*;
 import java.util.List;
 import java.util.Properties;
 
-public class OreSim extends GameGrid implements GGKeyListener
-{
-  // ------------- Inner classes -------------
-  public enum ElementType{
-    OUTSIDE("OS"), EMPTY("ET"), BORDER("BD"),
-    PUSHER("P"), BULLDOZER("B"), EXCAVATOR("E"), ORE("O"),
-    ROCK("R"), CLAY("C"), TARGET("T");
-    private String shortType;
+import org.apache.commons.text.WordUtils;
 
-    ElementType(String shortType) {
-      this.shortType = shortType;
-    }
+public class OreSim extends GameGrid {
+    // ------------- Inner classes -------------
 
-    public String getShortType() {
-      return shortType;
-    }
+    // Enum to represent different types of elements on the game grid
+    public enum ElementType {
+        OUTSIDE("OS"), EMPTY("ET"), BORDER("BD"),
+        PUSHER("P"), BULLDOZER("B"), EXCAVATOR("E"), ORE("O"),
+        ROCK("R"), CLAY("C"), TARGET("T");
+        private final String shortType;
 
-    public static ElementType getElementByShortType(String shortType) {
-      ElementType[] types = ElementType.values();
-      for (ElementType type: types) {
-        if (type.getShortType().equals(shortType)) {
-          return type;
+        ElementType(String shortType) {
+            this.shortType = shortType;
         }
-      }
 
-      return ElementType.EMPTY;
-    }
-  }
+        // Method to retrieve ElementType based on its short type
+        public String getShortType() {
+            return shortType;
+        }
 
-  private class Target extends Actor
-  {
-    public Target()
-    {
-      super("sprites/target.gif");
-    }
-  }
+        public static ElementType getElementByShortType(String shortType) {
+            ElementType[] types = ElementType.values();
+            for (ElementType type : types) {
+                if (type.getShortType().equals(shortType)) {
+                    return type;
+                }
+            }
 
-  private class Ore extends Actor
-  {
-    public Ore()
-    {
-      super("sprites/ore.png",2);
+            return ElementType.EMPTY;
+        }
     }
-  }
 
-  private class Pusher extends Actor
-  {
-    private List<String> controls = null;
-    private int autoMovementIndex = 0;
-    public Pusher()
-    {
-      super(true, "sprites/pusher.png");  // Rotatable
-    }
-    public void setupPusher(boolean isAutoMode, List<String> controls) {
-      this.controls = controls;
+    // ------------- End of inner classes ------
+    //
+
+    private final Map<String, Map<Integer, Machine>> machines;
+
+    private final ManualController manualController;
+    private final AutoController autoController;
+
+    private final MapGrid grid;
+    private final int nbHorzCells;
+    private final int nbVertCells;
+    private final List<Ore> ores;
+    private final List<Target> targets;
+    private final boolean isAutoMode;
+
+    private double gameDuration;
+    private int movementIndex;
+
+    private final StringBuilder logResult = new StringBuilder();
+
+    /**
+     * Constructor for the OreSim class, initialises the game grid, controllers, machines and other parameters
+     *
+     * @param properties Properties object containing simulation settings
+     * @param grid       MapGrid object representing the game grid
+     */
+    public OreSim(Properties properties, MapGrid grid) {
+        super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
+        this.grid = grid;
+        nbHorzCells = grid.getNbHorzCells();
+        nbVertCells = grid.getNbVertCells();
+
+        ores = new ArrayList<>(grid.getNbOres());
+        targets = new ArrayList<>(grid.getNbOres());
+
+        isAutoMode = properties.getProperty("movement.mode").equals("auto");
+        gameDuration = Integer.parseInt(properties.getProperty("duration"));
+        setSimulationPeriod(Integer.parseInt(properties.getProperty("simulationPeriod")));
+
+        machines = new LinkedHashMap<>();
+        for (String type : List.of(ElementType.PUSHER.getShortType(), ElementType.EXCAVATOR.getShortType(), ElementType.BULLDOZER.getShortType())) {
+            machines.put(type, new TreeMap<>());
+        }
+
+        autoController = new AutoController(this, properties, machines);
+        manualController = new ManualController(this, machines);
     }
 
     /**
-     * Method to move pusher automatically based on the instructions input from properties file
+     * Method to check the number of ores that have been collected
+     *
+     * @return  The number of ores scored
      */
-    public void autoMoveNext() {
-      if (controls != null && autoMovementIndex < controls.size()) {
-        String[] currentMove = controls.get(autoMovementIndex).split("-");
-        String machine = currentMove[0];
-        String move = currentMove[1];
-        autoMovementIndex++;
-        if (machine.equals("P")) {
-          if (isFinished)
-            return;
+    private int checkOresDone() {
+        return (int)ores.stream().filter((ore) -> ore.getIdVisible() == 1).count();
+    }
 
-          Location next = null;
-          switch (move)
-          {
-            case "L":
-              next = getLocation().getNeighbourLocation(Location.WEST);
-              setDirection(Location.WEST);
-              break;
-            case "U":
-              next = getLocation().getNeighbourLocation(Location.NORTH);
-              setDirection(Location.NORTH);
-              break;
-            case "R":
-              next = getLocation().getNeighbourLocation(Location.EAST);
-              setDirection(Location.EAST);
-              break;
-            case "D":
-              next = getLocation().getNeighbourLocation(Location.SOUTH);
-              setDirection(Location.SOUTH);
-              break;
-          }
 
-          Target curTarget = (Target) getOneActorAt(getLocation(), Target.class);
-          if (curTarget != null){
-            curTarget.show();
-          }
-          if (next != null && canMove(next))
-          {
-            setLocation(next);
-          }
-          refresh();
+    /**
+     * The main method to run the game
+     * @param isDisplayingUI  Flag indicating whether to display GUI
+     * @return                A string containing the simulation log
+     */
+    public String runApp(boolean isDisplayingUI) {
+        // Draw the initial game board
+        GGBackground bg = getBg();
+        drawBoard(bg);
+        drawActors();
+        if (isDisplayingUI) {
+            show();
         }
-      }
-    }
-  }
 
-  private class Bulldozer extends Actor
-  {
-    public Bulldozer()
-    {
-      super(true, "sprites/bulldozer.png");  // Rotatable
-    }
-  }
-
-  private class Excavator extends Actor
-  {
-    public Excavator()
-    {
-      super(true, "sprites/excavator.png");  // Rotatable
-    }
-  }
-
-  private class Rock extends Actor
-  {
-    public Rock() {super("sprites/rock.png");}
-  }
-
-  private class Clay extends Actor
-  {
-    public Clay() {super("sprites/clay.png");  }
-    }
-  // ------------- End of inner classes ------
-  //
-  private MapGrid grid;
-  private int nbHorzCells;
-  private int nbVertCells;
-  private final Color borderColor = new Color(100, 100, 100);
-  private Ore[] ores;
-  private Target[] targets;
-  private Pusher pusher;
-  private Bulldozer bulldozer;
-  private Excavator excavator;
-  private boolean isFinished = false;
-  private Properties properties;
-  private boolean isAutoMode;
-  private double gameDuration;
-  private List<String> controls;
-  private int movementIndex;
-  private StringBuilder logResult = new StringBuilder();
-  public OreSim(Properties properties, MapGrid grid)
-  {
-    super(grid.getNbHorzCells(), grid.getNbVertCells(), 30, false);
-    this.grid = grid;
-    nbHorzCells = grid.getNbHorzCells();
-    nbVertCells = grid.getNbVertCells();
-    this.properties = properties;
-
-    ores = new Ore[grid.getNbOres()];
-    targets = new Target[grid.getNbOres()];
-
-    isAutoMode = properties.getProperty("movement.mode").equals("auto");
-    gameDuration = Integer.parseInt(properties.getProperty("duration"));
-    setSimulationPeriod(Integer.parseInt(properties.getProperty("simulationPeriod")));
-    controls = Arrays.asList(properties.getProperty("machines.movements").split(","));
-  }
-
-  /**
-   * Check the number of ores that are collected
-   * @return
-   */
-
-  private int checkOresDone() {
-    int nbTarget = 0;
-    for (int i = 0; i < grid.getNbOres(); i++)
-    {
-      if (ores[i].getIdVisible() == 1)
-        nbTarget++;
-    }
-
-    return nbTarget;
-  }
-
-  /**
-   * The main method to run the game
-   * @param isDisplayingUI
-   * @return
-   */
-  public String runApp(boolean isDisplayingUI) {
-    GGBackground bg = getBg();
-    drawBoard(bg);
-    drawActors();
-    addKeyListener(this);
-    if (isDisplayingUI) {
-      show();
-    }
-
-    if (isAutoMode) {
-        doRun();
-    }
-
-    int oresDone = checkOresDone();
-    double ONE_SECOND = 1000.0;
-    while(oresDone < grid.getNbOres() && gameDuration >= 0) {
-      try {
-        Thread.sleep(simulationPeriod);
-        double minusDuration = (simulationPeriod / ONE_SECOND);
-        gameDuration -= minusDuration;
-        String title = String.format("# Ores at Target: %d. Time left: %.2f seconds", oresDone, gameDuration);
-        setTitle(title);
         if (isAutoMode) {
-          pusher.autoMoveNext();
-          updateLogResult();
+            doRun();
+            autoController.runControls();
+        } else {
+            // Only take keyboard input when not in auto mode
+            addKeyListener(manualController);
         }
 
-        oresDone = checkOresDone();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    }
 
-    doPause();
+        int oresDone = checkOresDone();
+        double ONE_SECOND = 1000.0;
 
-    if (oresDone == grid.getNbOres()) {
-      setTitle("Mission Complete. Well done!");
-    } else if (gameDuration < 0) {
-      setTitle("Mission Failed. You ran out of time");
-    }
-
-    updateStatistics();
-    isFinished = true;
-    return logResult.toString();
-  }
-
-  /**
-   * Transform the list of actors to a string of location for a specific kind of actor.
-   * @param actors
-   * @return
-   */
-  private String actorLocations(List<Actor> actors) {
-    StringBuilder stringBuilder = new StringBuilder();
-    boolean hasAddedColon = false;
-    boolean hasAddedLastComma = false;
-    for (int i = 0; i < actors.size(); i++) {
-      Actor actor = actors.get(i);
-      if (actor.isVisible()) {
-        if (!hasAddedColon) {
-          stringBuilder.append(":");
-          hasAddedColon = true;
-        }
-        stringBuilder.append(actor.getX() + "-" + actor.getY());
-        stringBuilder.append(",");
-        hasAddedLastComma = true;
-      }
-    }
-
-    if (hasAddedLastComma) {
-      stringBuilder.replace(stringBuilder.length() - 1, stringBuilder.length(), "");
-    }
-
-    return stringBuilder.toString();
-  }
+        // Continue simulation until all ores are collected or time runs out
+        while (oresDone < grid.getNbOres() && gameDuration >= 0) {
+            try {
+                Thread.sleep(simulationPeriod);
+                double minusDuration = (simulationPeriod / ONE_SECOND);
+                gameDuration -= minusDuration;
+                String title = String.format("# Ores at Target: %d. Time left: %.2f seconds", oresDone, gameDuration);
+                setTitle(title);
 
 
-  /**
-   * Students need to modify this method so it can write an actual statistics into the statistics file. It currently
-   *  only writes the sample data.
-   */
-  private void updateStatistics() {
-    File statisticsFile = new File("statistics.txt");
-    FileWriter fileWriter = null;
-    try {
-      fileWriter = new FileWriter(statisticsFile);
-
-      // Calculate and write statistics for pusher
-      int pusherMoves = movementIndex;
-      fileWriter.write("Pusher-1 Moves: " + pusherMoves + "\n");
-
-      // Calculate and write statistics for excavator
-      int excavatorMoves = movementIndex - 1; // Pusher moves 1 step first
-      int rocksRemoved = getNumberOfRocksRemoved();
-      fileWriter.write("Excavator-1 Moves: " + excavatorMoves + "\n");
-      fileWriter.write("Excavator-1 Rock removed: " + rocksRemoved + "\n");
-
-      // Calculate and write statistics for bulldozer
-      int bulldozerMoves = movementIndex - 1; // Pusher moves 1 step first
-      int clayRemoved = getNumberOfClayRemoved();
-      fileWriter.write("Bulldozer-1 Moves: " + bulldozerMoves + "\n");
-      fileWriter.write("Bulldozer-1 Clay removed: " + clayRemoved + "\n");
-
-    } catch (IOException e) {
-      System.out.println("Cannot write to file - e: " + e.getLocalizedMessage());
-    } finally {
-      try {
-        fileWriter.close();
-      } catch (IOException e) {
-        System.out.println("Cannot close file - e: " + e.getLocalizedMessage());
-      }
-    }
-  }
-
-  // Helper method to calculate the total number of rocks removed by excavator
-  private int getNumberOfRocksRemoved() {
-    int rocksRemoved = 0;
-    List<Actor> rocks = getActors(Rock.class);
-    for (int i = 0; i < rocks.size(); i++) {
-      Actor rock = rocks.get(i);
-      if (!rock.isVisible()) {
-        rocksRemoved++;
-      }
-    }
-    return rocksRemoved;
-  }
-
-  // Helper method to calculate the total number of clay removed by bulldozer
-  private int getNumberOfClayRemoved() {
-    int clayRemoved = 0;
-    List<Actor> clays = getActors(Clay.class);
-    for (int i = 0; i < clays.size(); i++) {
-      Actor clay = clays.get(i);
-      if (!clay.isVisible()) {
-        clayRemoved++;
-      }
-    }
-    return clayRemoved;
-  }
-
-  /**
-   * Draw all different actors on the board: pusher, ore, target, rock, clay, bulldozer, excavator
-   */
-  private void drawActors()
-  {
-    int oreIndex = 0;
-    int targetIndex = 0;
-
-    for (int y = 0; y < nbVertCells; y++)
-    {
-      for (int x = 0; x < nbHorzCells; x++)
-      {
-        Location location = new Location(x, y);
-        ElementType a = grid.getCell(location);
-        if (a == ElementType.PUSHER)
-        {
-          pusher = new Pusher();
-          addActor(pusher, location);
-          pusher.setupPusher(isAutoMode, controls);
-        }
-        if (a == ElementType.ORE)
-        {
-          ores[oreIndex] = new Ore();
-          addActor(ores[oreIndex], location);
-          oreIndex++;
-        }
-        if (a == ElementType.TARGET)
-        {
-          targets[targetIndex] = new Target();
-          addActor(targets[targetIndex], location);
-          targetIndex++;
+                oresDone = checkOresDone();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        if (a == ElementType.ROCK)
-        {
-          addActor(new Rock(), location);
-        }
+        // Pause simulation
+        doPause();
 
-        if (a == ElementType.CLAY)
-        {
-          addActor(new Clay(), location);
-        }
-
-        if (a == ElementType.BULLDOZER)
-        {
-          bulldozer = new Bulldozer();
-          addActor(bulldozer, location);
+        // Display final status
+        if (oresDone == grid.getNbOres()) {
+            setTitle("Mission Complete. Well done!");
+        } else if (gameDuration < 0) {
+            setTitle("Mission Failed. You ran out of time");
 
         }
-        if (a == ElementType.EXCAVATOR)
-        {
-          excavator = new Excavator();
-          addActor(excavator, location);
 
+        // Update and return simulation log
+        updateStatistics();
+        removeKeyListener(manualController);
+        return logResult.toString();
+    }
+
+    /**
+     * Transform the list of actors to a string of location for a specific kind of actor.
+     * @param actors  A list of Actor objects whose locations need to be represented.
+     * @return        A string representing the locations of the actors in format "x1-y1, x2-y2,..."
+     */
+    private String actorLocations(List<Actor> actors) {
+        StringBuilder stringBuilder = new StringBuilder();
+        boolean hasAddedColon = false;
+        boolean hasAddedLastComma = false;
+        for (Actor actor : actors) {
+            if (actor.isVisible()) {
+                if (!hasAddedColon) {
+                    stringBuilder.append(":");
+                    hasAddedColon = true;
+                }
+                stringBuilder.append(actor.getX()).append("-").append(actor.getY());
+                stringBuilder.append(",");
+                hasAddedLastComma = true;
+            }
         }
-      }
-    }
-    System.out.println("ores = " + Arrays.asList(ores));
-    setPaintOrder(Target.class);
-  }
 
-  /**
-   * Draw the basic board with outside color and border color
-   * @param bg
-   */
-
-  private void drawBoard(GGBackground bg)
-  {
-    bg.clear(new Color(230, 230, 230));
-    bg.setPaintColor(Color.darkGray);
-    for (int y = 0; y < nbVertCells; y++)
-    {
-      for (int x = 0; x < nbHorzCells; x++)
-      {
-        Location location = new Location(x, y);
-        ElementType a = grid.getCell(location);
-        if (a != ElementType.OUTSIDE)
-        {
-          bg.fillCell(location, Color.lightGray);
+        if (hasAddedLastComma) {
+            stringBuilder.replace(stringBuilder.length() - 1, stringBuilder.length(), "");
         }
-        if (a == ElementType.BORDER)  // Border
-          bg.fillCell(location, borderColor);
-      }
-    }
-  }
 
-  // Refactored method to handle movement
-  private void handleMovement(Location next) {
-    if (isFinished)
-      return;
-
-    Target curTarget = (Target) getOneActorAt(pusher.getLocation(), Target.class);
-    if (curTarget != null) {
-      curTarget.show();
+        return stringBuilder.toString();
     }
 
-    if (next != null && canMove(next)) {
-      pusher.setLocation(next);
-      updateLogResult();
-    }
-    refresh();
-  }
 
-  /**
-   * The method is automatically called by the framework when a key is pressed. Based on the pressed key, the pusher
-   *  will change the direction and move
-   * @param evt
-   * @return
-   */
-  public boolean keyPressed(KeyEvent evt) {
-    if (isFinished)
-      return true;
+    /**
+     * Method to update statistics and write them to a file
+     */
+    private void updateStatistics() {
+        // Initialize fileWriter;
+        File statisticsFile = new File("statistics.txt");
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(statisticsFile);
 
-    Location next = null;
-    switch (evt.getKeyCode()) {
-      case KeyEvent.VK_LEFT:
-        next = pusher.getLocation().getNeighbourLocation(Location.WEST);
-        pusher.setDirection(Location.WEST);
-        break;
-      case KeyEvent.VK_UP:
-        next = pusher.getLocation().getNeighbourLocation(Location.NORTH);
-        pusher.setDirection(Location.NORTH);
-        break;
-      case KeyEvent.VK_RIGHT:
-        next = pusher.getLocation().getNeighbourLocation(Location.EAST);
-        pusher.setDirection(Location.EAST);
-        break;
-      case KeyEvent.VK_DOWN:
-        next = pusher.getLocation().getNeighbourLocation(Location.SOUTH);
-        pusher.setDirection(Location.SOUTH);
-        break;
-    }
-    handleMovement(next);
-    return true;
-  }
+            // Create a final fileWriter
+            FileWriter fw = fileWriter;
 
-  public boolean keyReleased(KeyEvent evt)
-  {
-    return true;
-  }
+            // Iterate every machine in initialisation order, writing its statistics to file
+            machines.forEach((type, typed_machines) -> {
+                typed_machines.forEach((id, m) -> {
+                    try {
+                        ElementType t = ElementType.getElementByShortType(type);
 
-  /**
-   * Check if we can move the pusher into the location
-   * @param location
-   * @return
-   */
-  private boolean canMove(Location location)
-  {
-    // Test if try to move into border, rock or clay
-    Color c = getBg().getColor(location);
-    Rock rock = (Rock)getOneActorAt(location, Rock.class);
-    Clay clay = (Clay)getOneActorAt(location, Clay.class);
-    Bulldozer bulldozer = (Bulldozer)getOneActorAt(location, Bulldozer.class);
-    Excavator excavator = (Excavator)getOneActorAt(location, Excavator.class);
-    if (c.equals(borderColor) || rock != null || clay != null || bulldozer != null || excavator != null)
-      return false;
-    else // Test if there is an ore
-    {
-      Ore ore = (Ore)getOneActorAt(location, Ore.class);
-      if (ore != null)
-      {
+                        // Print the machine name, id, and number of moves
+                        fw.write(WordUtils.capitalize(t.name().toLowerCase())
+                                + "-" + m.getId()
+                                + " Moves: " + m.getMoves() + "\n");
 
-          // Try to move the ore
-           ore.setDirection(pusher.getDirection());
-          if (moveOre(ore))
-            return true;
-          else
-            return false;
+                        // For each destroyable class, print the number of destroyed objects
+                        m.getDestroyed().forEach((clazz, n) -> {
+                            try {
+                                fw.write(WordUtils.capitalize(t.name().toLowerCase())
+                                        + "-" + m.getId() + " "
+                                        + clazz.getSimpleName()
+                                        + " removed: " + n + "\n");
 
-      }
-    }
+                            } catch (IOException e) {
+                                System.out.println("Cannot write to file - e: "
+                                        + e.getLocalizedMessage());
+                            }
+                        });
 
-    return true;
-  }
+                    } catch (IOException e) {
+                        System.out.println("Cannot write to file - e: "
+                                + e.getLocalizedMessage());
+                    }
+                });
+            });
 
-  /**
-   * When the pusher pushes the ore in 1 direction, this method will be called to check if the ore can move in that direction
-   *  and if it can move, then it changes the location
-   * @param ore
-   * @return
-   */
-  private boolean moveOre(Ore ore)
-  {
-    Location next = ore.getNextMoveLocation();
-    // Test if try to move into border
-    Color c = getBg().getColor(next);;
-    Rock rock = (Rock)getOneActorAt(next, Rock.class);
-    Clay clay = (Clay)getOneActorAt(next, Clay.class);
-    if (c.equals(borderColor) || rock != null || clay != null)
-      return false;
-
-    // Test if there is another ore
-    Ore neighbourOre =
-      (Ore)getOneActorAt(next, Ore.class);
-    if (neighbourOre != null)
-      return false;
-
-    // Reset the target if the ore is moved out of target
-    Location currentLocation = ore.getLocation();
-    List<Actor> actors = getActorsAt(currentLocation);
-    if (actors != null) {
-      for (Actor actor : actors) {
-        if (actor instanceof Target) {
-          Target currentTarget = (Target) actor;
-          currentTarget.show();
-          ore.show(0);
+        } catch (IOException e) {
+            System.out.println("Cannot open file - e: "
+                    + e.getLocalizedMessage());
+        } finally {
+            // Always close fileWriter of open
+            try {
+                if (fileWriter != null) {
+                    fileWriter.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Cannot close file - e: " + e.getLocalizedMessage());
+            }
         }
-      }
     }
 
-    // Move the ore
-    ore.setLocation(next);
+    /**
+     * Draw all different actors on the board: pusher, ore, target, rock, clay, bulldozer, excavator
+     */
+    private void drawActors() {
 
-    // Check if we are at a target
-    Target nextTarget = (Target) getOneActorAt(next, Target.class);
-    if (nextTarget != null) {
-      ore.show(1);
-      nextTarget.hide();
-    } else {
-      ore.show(0);
+        for (int y = 0; y < nbVertCells; y++) {
+            for (int x = 0; x < nbHorzCells; x++) {
+                Location location = new Location(x, y);
+
+                ElementType a = grid.getCell(location);
+
+                switch (a) {
+                    case PUSHER -> {
+                        String type = ElementType.PUSHER.getShortType();
+                        Pusher pusher = new Pusher(machines.get(type).size() + 1);
+                        addActor(pusher, location);
+                        machines.get(type).put(pusher.getId(), pusher);
+                        manualController.setMachine(type, pusher.getId());
+                    }
+                    case ORE -> {
+                        Ore ore = new Ore();
+                        ores.add(ore);
+                        addActor(ore, location);
+                    }
+                    case TARGET -> {
+                        Target target = new Target();
+                        targets.add(target);
+                        addActor(target, location);
+                    }
+                    case ROCK -> {
+                        addActor(new Rock(), location);
+                    }
+                    case CLAY -> {
+                        addActor(new Clay(), location);
+                    }
+                    case BULLDOZER -> {
+                        String type = ElementType.BULLDOZER.getShortType();
+                        Bulldozer bulldozer = new Bulldozer(machines.get(type).size() + 1);
+                        addActor(bulldozer, location);
+                        machines.get(type).put(bulldozer.getId(), bulldozer);
+                    }
+                    case EXCAVATOR -> {
+                        String type = ElementType.EXCAVATOR.getShortType();
+                        Excavator excavator = new Excavator(machines.get(type).size() + 1);
+                        addActor(excavator, location);
+                        machines.get(type).put(excavator.getId(), excavator);
+                    }
+                    default -> {}
+                }
+            }
+        }
+
+        System.out.println("ores = " + (ores));
+        setPaintOrder(Target.class);
     }
 
-    return true;
-  }
+    /**
+     * Draw the basic board with outside color and border color
+     *
+     * @param bg  The background object to draw on
+     */
+    private void drawBoard(GGBackground bg) {
+        bg.clear(new Color(230, 230, 230));
+        bg.setPaintColor(Color.darkGray);
 
-  /**
-   * The method will generate a log result for all the movements of all actors
-   * The log result will be tested against our expected output.
-   * Your code will need to pass all the 3 test suites with 9 test cases.
-   */
-  private void updateLogResult() {
-    movementIndex++;
-    Map<ElementType, List<Actor>> actorMap = new HashMap<>();
-    actorMap.put(ElementType.PUSHER, getActors(Pusher.class));
-    actorMap.put(ElementType.ORE, getActors(Ore.class));
-    actorMap.put(ElementType.TARGET, getActors(Target.class));
-    actorMap.put(ElementType.ROCK, getActors(Rock.class));
-    actorMap.put(ElementType.CLAY, getActors(Clay.class));
-    actorMap.put(ElementType.BULLDOZER, getActors(Bulldozer.class));
-    actorMap.put(ElementType.EXCAVATOR, getActors(Excavator.class));
+        for (int y = 0; y < nbVertCells; y++) {
+            for (int x = 0; x < nbHorzCells; x++) {
 
-    logResult.append(movementIndex).append("#");
-    for (Map.Entry<ElementType, List<Actor>> entry : actorMap.entrySet()) {
-      ElementType type = entry.getKey();
-      List<Actor> actors = entry.getValue();
-      logResult.append(type.getShortType()).append(actorLocations(actors)).append("#");
+                Location location = new Location(x, y);
+                ElementType a = grid.getCell(location);
+
+                if (a != ElementType.OUTSIDE) {
+                    bg.fillCell(location, Color.lightGray);
+                }
+
+                if (a == ElementType.BORDER) {  // Border
+                    bg.fillCell(location, MapGrid.BORDER_COLOR);
+                }
+            }
+        }
     }
-    logResult.append("\n");
-  }
+
+
+    /**
+     * The method will generate a log result for all the movements of all actors
+     * The log result will be tested against our expected output.
+     * Your code will need to pass all the 3 test suites with 9 test cases.
+     */
+    public void updateLogResult() {
+        movementIndex++;
+        List<Actor> pushers = getActors(Pusher.class);
+        List<Actor> ores = getActors(Ore.class);
+        List<Actor> targets = getActors(Target.class);
+        List<Actor> rocks = getActors(Rock.class);
+        List<Actor> clays = getActors(Clay.class);
+        List<Actor> bulldozers = getActors(Bulldozer.class);
+        List<Actor> excavators = getActors(Excavator.class);
+
+        logResult.append(movementIndex).append("#");
+        logResult.append(ElementType.PUSHER.getShortType()).append(actorLocations(pushers)).append("#");
+        logResult.append(ElementType.ORE.getShortType()).append(actorLocations(ores)).append("#");
+        logResult.append(ElementType.TARGET.getShortType()).append(actorLocations(targets)).append("#");
+        logResult.append(ElementType.ROCK.getShortType()).append(actorLocations(rocks)).append("#");
+        logResult.append(ElementType.CLAY.getShortType()).append(actorLocations(clays)).append("#");
+        logResult.append(ElementType.BULLDOZER.getShortType()).append(actorLocations(bulldozers)).append("#");
+        logResult.append(ElementType.EXCAVATOR.getShortType()).append(actorLocations(excavators));
+
+        logResult.append("\n");
+    }
 
 }

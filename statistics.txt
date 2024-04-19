@@ -1,0 +1,5 @@
+Pusher-1 Moves: 10
+Excavator-1 Moves: 5
+Excavator-1 Rock removed: 3
+Bulldozer-1 Moves: 2
+Bulldozer-1 Clay removed: 1
