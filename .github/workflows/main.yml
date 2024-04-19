@@ -1,4 +1,4 @@
-name: Project 1 Workflow
+name: Project-1 Workflow
 
 on: [workflow_dispatch]
 
